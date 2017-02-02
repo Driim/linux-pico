@@ -444,8 +444,7 @@ static int imx_drm_bind(struct device *dev)
 	if (legacyfb_depth == 16 && has_dcss(dev))
 		legacyfb_depth = 32;
 
-	imxdrm->fbhelper = drm_fbdev_cma_init(drm, legacyfb_depth,
-				drm->mode_config.num_crtc, MAX_CRTC);
+	imxdrm->fbhelper = drm_fbdev_cma_init(drm, legacyfb_depth, MAX_CRTC);
 	if (IS_ERR(imxdrm->fbhelper)) {
 		ret = PTR_ERR(imxdrm->fbhelper);
 		imxdrm->fbhelper = NULL;
