@@ -59,6 +59,7 @@ Gyroscopes:
 - st,l3g4is-gyro
 - st,lsm330-gyro
 - st,lsm9ds0-gyro
+- st,lsm9ds1-gyro
 
 Magnetometers:
 - st,lsm303agr-magn
