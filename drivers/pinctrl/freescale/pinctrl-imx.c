@@ -477,12 +477,19 @@ static int imx_pinctrl_parse_groups(struct device_node *np,
 	config = imx_pinconf_parse_generic_config(np, ipctl);
 
 	grp->num_pins = size / pin_size;
+<<<<<<< HEAD
 	grp->data = devm_kcalloc(ipctl->dev,
 				 grp->num_pins, sizeof(struct imx_pin),
 				 GFP_KERNEL);
 	grp->pins = devm_kcalloc(ipctl->dev,
 				 grp->num_pins, sizeof(unsigned int),
 				 GFP_KERNEL);
+=======
+	grp->data = devm_kzalloc(ipctl->dev, grp->num_pins *
+				 sizeof(struct imx_pin), GFP_KERNEL);
+	grp->pins = devm_kzalloc(ipctl->dev, grp->num_pins *
+				 sizeof(unsigned int), GFP_KERNEL);
+>>>>>>> pinctrl: imx: use struct imx_pinctrl_soc_info as a const
 	if (!grp->pins || !grp->data)
 		return -ENOMEM;
 
@@ -700,9 +707,14 @@ int imx_pinctrl_probe(struct platform_device *pdev,
 	if (!ipctl)
 		return -ENOMEM;
 
+<<<<<<< HEAD
 	ipctl->pin_regs = devm_kmalloc_array(&pdev->dev,
 				       info->npins, sizeof(*ipctl->pin_regs),
 				       GFP_KERNEL);
+=======
+	ipctl->pin_regs = devm_kmalloc(&pdev->dev, sizeof(*ipctl->pin_regs) *
+				      info->npins, GFP_KERNEL);
+>>>>>>> pinctrl: imx: use struct imx_pinctrl_soc_info as a const
 	if (!ipctl->pin_regs)
 		return -ENOMEM;
 
