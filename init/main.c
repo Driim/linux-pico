@@ -1024,12 +1024,14 @@ static noinline void __init kernel_init_freeable(void);
 
 #if defined(CONFIG_STRICT_KERNEL_RWX) || defined(CONFIG_STRICT_MODULE_RWX)
 bool rodata_enabled __ro_after_init = true;
+#else
+bool rodata_enabled = false;
+#endif
 static int __init set_debug_rodata(char *str)
 {
 	return strtobool(str, &rodata_enabled);
 }
 __setup("rodata=", set_debug_rodata);
-#endif
 
 #ifdef CONFIG_STRICT_KERNEL_RWX
 static void mark_readonly(void)
