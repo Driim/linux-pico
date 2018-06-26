@@ -391,8 +391,8 @@
 	};
 
 	pinctrl_modem_reset: modem_resetgrp {
-				/* BT_REG_ON */
-		pinmux = <MX8MQ_IOMUXC_GPIO1_IO09_GPIO1_IO9>;
+		/* BT_REG_ON */
+		pinmux = <MX8MQ_IOMUXC_NAND_DATA00_GPIO3_IO6>;
 		drive-strength = <1>;
 		slew-rate = <0>;
 	};
