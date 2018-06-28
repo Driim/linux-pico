@@ -15,8 +15,22 @@ if ARM64
 
 config SOC_IMX8MQ
 	bool "i.MX8MQ support"
+	select HAVE_IMX_MU
+	select HAVE_IMX_RPMSG
+	select HAVE_IMX8_SOC
 	help
 	  This enables support for the i.MX8MQ SoC.
-endif
 
+config HAVE_IMX_MU
+	bool
+
+config HAVE_IMX8_SOC
+	bool
+
+config HAVE_IMX_RPMSG
+	select RPMSG_VIRTIO
+	select RPMSG
+	bool
+
+endif
 endif
