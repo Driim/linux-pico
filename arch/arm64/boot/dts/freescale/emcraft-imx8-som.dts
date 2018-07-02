@@ -60,6 +60,16 @@
 			gpio = <&gpio2 19 GPIO_ACTIVE_HIGH>;
 			enable-active-high;
 		};
+
+		reg_pwr_en: pwr_en {
+			compatible = "regulator-fixed";
+			regulator-name = "PWR_EN";
+			regulator-min-microvolt = <3300000>;
+			regulator-max-microvolt = <3300000>;
+			gpio = <&gpio1 8 GPIO_ACTIVE_HIGH>;
+			enable-active-high;
+			regulator-always-on;
+		};
 	};
 
 	modem_reset: modem_reset {
@@ -154,7 +164,9 @@
 			linux,code = <114>;
 		};
 	};
+
 };
+
 
 &clk {
 	assigned-clocks = <&clk IMX8MQ_AUDIO_PLL1>;
@@ -1120,7 +1132,7 @@
 	status = "okay";
 };
 
-#ifdef TODO
+#if 0
 &usb3_phy0 {
 	status = "okay";
 };
@@ -1147,7 +1159,9 @@
 	status = "okay";
 	dr_mode = "host";
 };
+#endif
 
+#ifdef TODO
 &sai2 {
 	pinctrl-names = "default";
 	pinctrl-0 = <&pinctrl_sai2>;
@@ -1235,7 +1249,7 @@
 	dc-supply = <&buck2_reg>;
 };
 
-#if TODO
+#if 0
 &dcss {
 	status = "okay";
 
