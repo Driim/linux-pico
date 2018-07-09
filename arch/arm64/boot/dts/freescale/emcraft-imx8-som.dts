@@ -34,7 +34,7 @@
 
 / {
 	model = "Emcraft i.MX8M SOM";
-	compatible = "emcraft,imx8m-som", "fsl,imx8mq";
+	compatible = "emcraft,imx8m-som", "fsl,imx8mq", "fsl,imx7d";
 
 	chosen {
 		bootargs = "console=ttymxc0,115200 earlycon=ec_imx6q,0x30860000,115200";
@@ -743,6 +743,7 @@
 			reg = <1>;
 			at803x,led-act-blind-workaround;
 			at803x,eee-disabled;
+			power-supply = <&reg_pwr_en>;
 		};
 	};
 };
@@ -1044,7 +1045,10 @@
 	status = "okay";
 };
 
-#if TODO
+&pcie0_pd{
+	power-supply = <&reg_pwr_en>;
+};
+
 &pcie0{
 	pinctrl-names = "default";
 	pinctrl-0 = <&pinctrl_pcie0>;
@@ -1055,6 +1059,11 @@
 	hard-wired = <1>;
 	clk2-gen;
 	status = "okay";
+	power-domains = <&pcie0_pd>;
+};
+
+&pcie1_pd{
+	power-supply = <&reg_pwr_en>;
 };
 
 &pcie1{
@@ -1065,8 +1074,8 @@
 	reset-gpio = <&gpio3 17 GPIO_ACTIVE_LOW>;
 	ext_osc = <1>;
 	status = "okay";
+	power-domains = <&pcie1_pd>;
 };
-#endif
 
 &uart1 { /* console */
 	pinctrl-names = "default";
@@ -1122,7 +1131,12 @@
 	bus-width = <4>;
 	cd-gpios = <&gpio2 12 GPIO_ACTIVE_LOW>;
 	vmmc-supply = <&reg_usdhc2_vmmc>;
+	power-supply = <&reg_pwr_en>;
 	status = "okay";
+};
+
+&usb_otg1_pd{
+	power-supply = <&reg_pwr_en>;
 };
 
 &usb3_phy0 {
@@ -1131,6 +1145,8 @@
 
 &usb3_0 {
 	status = "okay";
+	// power-supply = <&reg_pwr_en>;
+	power-domains = <&usb_otg1_pd>;
 };
 
 &usb_dwc3_0 {
@@ -1139,12 +1155,18 @@
 	dr_mode = "otg";
 };
 
+&usb_otg2_pd{
+	power-supply = <&reg_pwr_en>;
+};
+
 &usb3_phy1 {
 	status = "okay";
 };
 
 &usb3_1 {
 	status = "okay";
+	// power-supply = <&reg_pwr_en>;
+	power-domains = <&usb_otg2_pd>;
 };
 
 &usb_dwc3_1 {
@@ -1159,6 +1181,7 @@
 	clocks = <&clk IMX8MQ_CLK_SAI2_IPG>;
 	clock-names = "bus";
 
+	power-supply = <&reg_pwr_en>;
 	status = "okay";
 };
 
@@ -1207,6 +1230,8 @@
 	status = "okay";
 };
 
+#endif
+
 &wdog1 {
 	pinctrl-names = "default";
 	pinctrl-0 = <&pinctrl_wdog>;
@@ -1223,7 +1248,6 @@
 	reg = <0x0 0x58000000 0x0 0x10000>;
 	status = "okay";
 };
-#endif
 
 &mu {
 	status = "okay";
