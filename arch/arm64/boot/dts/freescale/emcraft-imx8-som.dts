@@ -15,11 +15,6 @@
 /dts-v1/;
 
 /*
- * Define this to support IMX8M-SOM-BSB with external PHY clock
- * #define PHY_USE_EXT25MHZ
- */
-
-/*
  * Define this to enable i2c3 channel instead of pwm4 on IMX8M-SOM-BSB
  * #define I2C3_ENABLE
  */
@@ -729,11 +724,6 @@
 	fsl,magic-packet;
 	status = "okay";
 
-#ifdef PHY_USE_EXT25MHZ
-	/* Removed "enet_phy_out" */
-	clock-names = "ipg", "ahb", "ptp",
-		    "enet_clk_ref", "enet_out";
-#endif
 	mdio {
 		#address-cells = <1>;
 		#size-cells = <0>;
