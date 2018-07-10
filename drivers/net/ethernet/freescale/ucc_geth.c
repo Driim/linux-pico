@@ -37,7 +37,7 @@
 #include <linux/of_net.h>
 #include <linux/of_platform.h>
 
-#include <linux/uaccess.h>
+#include <asm/uaccess.h>
 #include <asm/irq.h>
 #include <asm/io.h>
 #include <soc/fsl/qe/immap_qe.h>
@@ -2253,9 +2253,9 @@ static int ucc_geth_alloc_tx(struct ucc_geth_private *ugeth)
 	/* Init Tx bds */
 	for (j = 0; j < ug_info->numQueuesTx; j++) {
 		/* Setup the skbuff rings */
-		ugeth->tx_skbuff[j] =
-			kmalloc_array(ugeth->ug_info->bdRingLenTx[j],
-				      sizeof(struct sk_buff *), GFP_KERNEL);
+		ugeth->tx_skbuff[j] = kmalloc(sizeof(struct sk_buff *) *
+					      ugeth->ug_info->bdRingLenTx[j],
+					      GFP_KERNEL);
 
 		if (ugeth->tx_skbuff[j] == NULL) {
 			if (netif_msg_ifup(ugeth))
@@ -2326,9 +2326,9 @@ static int ucc_geth_alloc_rx(struct ucc_geth_private *ugeth)
 	/* Init Rx bds */
 	for (j = 0; j < ug_info->numQueuesRx; j++) {
 		/* Setup the skbuff rings */
-		ugeth->rx_skbuff[j] =
-			kmalloc_array(ugeth->ug_info->bdRingLenRx[j],
-				      sizeof(struct sk_buff *), GFP_KERNEL);
+		ugeth->rx_skbuff[j] = kmalloc(sizeof(struct sk_buff *) *
+					      ugeth->ug_info->bdRingLenRx[j],
+					      GFP_KERNEL);
 
 		if (ugeth->rx_skbuff[j] == NULL) {
 			if (netif_msg_ifup(ugeth))
@@ -2594,10 +2594,11 @@ static int ucc_geth_startup(struct ucc_geth_private *ugeth)
 		} else if (ugeth->ug_info->uf_info.bd_mem_part ==
 			   MEM_PART_MURAM) {
 			out_be32(&ugeth->p_send_q_mem_reg->sqqd[i].bd_ring_base,
-				 (u32)qe_muram_dma(ugeth->p_tx_bd_ring[i]));
+				 (u32) immrbar_virt_to_phys(ugeth->
+							    p_tx_bd_ring[i]));
 			out_be32(&ugeth->p_send_q_mem_reg->sqqd[i].
 				 last_bd_completed_address,
-				 (u32)qe_muram_dma(endOfRing));
+				 (u32) immrbar_virt_to_phys(endOfRing));
 		}
 	}
 
@@ -2843,7 +2844,8 @@ static int ucc_geth_startup(struct ucc_geth_private *ugeth)
 		} else if (ugeth->ug_info->uf_info.bd_mem_part ==
 			   MEM_PART_MURAM) {
 			out_be32(&ugeth->p_rx_bd_qs_tbl[i].externalbdbaseptr,
-				 (u32)qe_muram_dma(ugeth->p_rx_bd_ring[i]));
+				 (u32) immrbar_virt_to_phys(ugeth->
+							    p_rx_bd_ring[i]));
 		}
 		/* rest of fields handled by QE */
 	}
@@ -3301,7 +3303,7 @@ static int ucc_geth_poll(struct napi_struct *napi, int budget)
 		howmany += ucc_geth_rx(ugeth, i, budget - howmany);
 
 	if (howmany < budget) {
-		napi_complete_done(napi, howmany);
+		napi_complete(napi);
 		setbits32(ugeth->uccf->p_uccm, UCCE_RX_EVENTS | UCCE_TX_EVENTS);
 	}
 
@@ -3679,6 +3681,7 @@ static const struct net_device_ops ucc_geth_netdev_ops = {
 	.ndo_start_xmit		= ucc_geth_start_xmit,
 	.ndo_validate_addr	= eth_validate_addr,
 	.ndo_set_mac_address	= ucc_geth_set_mac_addr,
+	.ndo_change_mtu		= eth_change_mtu,
 	.ndo_set_rx_mode	= ucc_geth_set_multi,
 	.ndo_tx_timeout		= ucc_geth_timeout,
 	.ndo_do_ioctl		= ucc_geth_ioctl,
@@ -3857,9 +3860,8 @@ static int ucc_geth_probe(struct platform_device* ofdev)
 	}
 
 	if (netif_msg_probe(&debug))
-		pr_info("UCC%1d at 0x%8llx (irq = %d)\n",
-			ug_info->uf_info.ucc_num + 1,
-			(u64)ug_info->uf_info.regs,
+		pr_info("UCC%1d at 0x%8x (irq = %d)\n",
+			ug_info->uf_info.ucc_num + 1, ug_info->uf_info.regs,
 			ug_info->uf_info.irq);
 
 	/* Create an ethernet device instance */
