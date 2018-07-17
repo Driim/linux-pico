@@ -34,6 +34,7 @@ static u32 share_count_nand;
 static struct clk *clks[IMX8MQ_CLK_END];
 
 static const char *pll_ref_sels[] = { "osc_25m", "osc_27m", "dummy", "dummy", };
+static const char *video2_pll_ref_sels[] = { "osc_25m", "osc_27m", "phy_27m", "dummy", };
 static const char *arm_pll_bypass_sels[] = {"arm_pll", "arm_pll_ref_sel", };
 static const char *gpu_pll_bypass_sels[] = {"gpu_pll", "gpu_pll_ref_sel", };
 static const char *vpu_pll_bypass_sels[] = {"vpu_pll", "vpu_pll_ref_sel", };
@@ -272,6 +273,8 @@ static const char *imx8mq_pcie2_aux_sels[] = {"osc_25m", "sys2_pll_200m", "sys2_
 static const char *imx8mq_ecspi3_sels[] = {"osc_25m", "sys2_pll_200m", "sys1_pll_40m", "sys1_pll_160m",
 					   "sys1_pll_800m", "sys3_pll2_out", "sys2_pll_250m", "audio_pll2_out", };
 static const char *imx8mq_dram_core_sels[] = {"dram_pll_out", "dram_alt_root", };
+static const char *imx8mq_clko1_sels[] = {"osc_25m", "sys1_pll_800m", "osc_27m", "sys1_pll_200m", "audio_pll2_out", 
+					"sys2_pll_500m", "vpu_pll_out",	"sys1_pll_80m", };
 
 static const char *imx8mq_clko2_sels[] = {"osc_25m", "sys2_pll_200m", "sys1_pll_400m", "sys2_pll_166m", "audio_pll1_out",
 					 "video_pll1_out", "ckil", };
@@ -301,6 +304,7 @@ static void __init imx8mq_clocks_init(struct device_node *ccm_node)
 	clks[IMX8MQ_CLK_EXT2] = of_clk_get_by_name(ccm_node, "clk_ext2");
 	clks[IMX8MQ_CLK_EXT3] = of_clk_get_by_name(ccm_node, "clk_ext3");
 	clks[IMX8MQ_CLK_EXT4] = of_clk_get_by_name(ccm_node, "clk_ext4");
+	clks[IMX8MQ_VIDEO2_PHY_27MHZ] = imx_clk_fixed("phy_27m", 27000000);
 
 	np = of_find_compatible_node(NULL, NULL, "fsl,imx8mq-anatop");
 	base = of_iomap(np, 0);
@@ -316,7 +320,7 @@ static void __init imx8mq_clocks_init(struct device_node *ccm_node)
 	clks[IMX8MQ_SYS2_PLL1_REF_SEL]	= imx_clk_mux("sys2_pll1_ref_sel", base + 0x3c, 0, 2, pll_ref_sels, ARRAY_SIZE(pll_ref_sels));
 	clks[IMX8MQ_SYS3_PLL1_REF_SEL]	= imx_clk_mux("sys3_pll1_ref_sel", base + 0x48, 0, 2, pll_ref_sels, ARRAY_SIZE(pll_ref_sels));
 	clks[IMX8MQ_DRAM_PLL1_REF_SEL]	= imx_clk_mux("dram_pll1_ref_sel", base + 0x60, 0, 2, pll_ref_sels, ARRAY_SIZE(pll_ref_sels));
-	clks[IMX8MQ_VIDEO2_PLL1_REF_SEL] = imx_clk_mux("video2_pll1_ref_sel", base + 0x54, 0, 2, pll_ref_sels, ARRAY_SIZE(pll_ref_sels));
+	clks[IMX8MQ_VIDEO2_PLL1_REF_SEL] = imx_clk_mux("video2_pll1_ref_sel", base + 0x54, 0, 2, video2_pll_ref_sels, ARRAY_SIZE(video2_pll_ref_sels));
 
 	clks[IMX8MQ_ARM_PLL_REF_DIV]	= imx_clk_divider("arm_pll_ref_div", "arm_pll_ref_sel", base + 0x28, 5, 6);
 	clks[IMX8MQ_GPU_PLL_REF_DIV]	= imx_clk_divider("gpu_pll_ref_div", "gpu_pll_ref_sel", base + 0x18, 5, 6);
@@ -340,7 +344,7 @@ static void __init imx8mq_clocks_init(struct device_node *ccm_node)
 	clks[IMX8MQ_SYS2_PLL1] = imx_clk_sccg_pll("sys2_pll1", "sys2_pll1_ref_div", base + 0x3c, SCCG_PLL1);
 	clks[IMX8MQ_SYS3_PLL1] = imx_clk_sccg_pll("sys3_pll1", "sys3_pll1_ref_div", base + 0x48, SCCG_PLL1);
 	clks[IMX8MQ_DRAM_PLL1] = imx_clk_sccg_pll("dram_pll1", "dram_pll1_ref_div", base + 0x60, SCCG_PLL1);
-	clks[IMX8MQ_VIDEO2_PLL1] = imx_clk_sccg_pll("video2_pll1", "video2_pll1_ref_div", base + 0x5c, 3);
+	clks[IMX8MQ_VIDEO2_PLL1] = imx_clk_sccg_pll("video2_pll1", "video2_pll1_ref_div", base + 0x54, 3);
 
 	clks[IMX8MQ_SYS1_PLL2] = imx_clk_sccg_pll("sys1_pll2", "sys1_pll1_out_div", base + 0x30, SCCG_PLL2);
 	clks[IMX8MQ_SYS2_PLL2] = imx_clk_sccg_pll("sys2_pll2", "sys2_pll1_out_div", base + 0x3c, SCCG_PLL2);
@@ -554,6 +558,7 @@ static void __init imx8mq_clocks_init(struct device_node *ccm_node)
 	clks[IMX8MQ_CLK_GPT1_SRC] = imx_clk_mux2("gpt1_src", base + 0xb580, 24, 3, imx8mq_gpt1_sels, ARRAY_SIZE(imx8mq_gpt1_sels));
 	clks[IMX8MQ_CLK_WDOG_SRC] = imx_clk_mux2("wdog_src", base + 0xb900, 24, 3, imx8mq_wdog_sels, ARRAY_SIZE(imx8mq_wdog_sels));
 	clks[IMX8MQ_CLK_WRCLK_SRC] = imx_clk_mux2("wrclk_src", base + 0xb980, 24, 3, imx8mq_wrclk_sels, ARRAY_SIZE(imx8mq_wrclk_sels));
+	clks[IMX8MQ_CLK_CLKO1_SRC] = imx_clk_mux2("clko1_src", base + 0xba00, 24, 3, imx8mq_clko1_sels, ARRAY_SIZE(imx8mq_clko1_sels));
 	clks[IMX8MQ_CLK_CLKO2_SRC] = imx_clk_mux2("clko2_src", base + 0xba80, 24, 3, imx8mq_clko2_sels, ARRAY_SIZE(imx8mq_clko2_sels));
 	clks[IMX8MQ_CLK_DSI_CORE_SRC] = imx_clk_mux2("dsi_core_src", base + 0xbb00, 24, 3, imx8mq_dsi_core_sels, ARRAY_SIZE(imx8mq_dsi_core_sels));
 	clks[IMX8MQ_CLK_DSI_PHY_REF_SRC] = imx_clk_mux2("dsi_phy_ref_src", base + 0xbb80, 24, 3, imx8mq_dsi_phy_sels, ARRAY_SIZE(imx8mq_dsi_phy_sels));
@@ -616,6 +621,7 @@ static void __init imx8mq_clocks_init(struct device_node *ccm_node)
 	clks[IMX8MQ_CLK_GPT1_CG] = imx_clk_gate3("gpt1_cg", "gpt1_src", base + 0xb580, 28);
 	clks[IMX8MQ_CLK_WDOG_CG] = imx_clk_gate3("wdog_cg", "wdog_src", base + 0xb900, 28);
 	clks[IMX8MQ_CLK_WRCLK_CG] = imx_clk_gate3("wrclk_cg", "wrclk_src", base + 0xb980, 28);
+	clks[IMX8MQ_CLK_CLKO1_CG] = imx_clk_gate3("clko1_cg", "clko1_src", base + 0xba00, 28);
 	clks[IMX8MQ_CLK_CLKO2_CG] = imx_clk_gate3("clko2_cg", "clko2_src", base + 0xba80, 28);
 	clks[IMX8MQ_CLK_DSI_CORE_CG] = imx_clk_gate3("dsi_core_cg", "dsi_core_src", base + 0xbb00, 28);
 	clks[IMX8MQ_CLK_DSI_PHY_REF_CG] = imx_clk_gate3("dsi_phy_ref_cg", "dsi_phy_ref_src", base + 0xbb80, 28);
@@ -678,6 +684,7 @@ static void __init imx8mq_clocks_init(struct device_node *ccm_node)
 	clks[IMX8MQ_CLK_GPT1_PRE_DIV] = imx_clk_divider2("gpt1_pre_div", "gpt1_cg", base + 0xb580, 16, 3);
 	clks[IMX8MQ_CLK_WDOG_PRE_DIV] = imx_clk_divider2("wdog_pre_div", "wdog_cg", base + 0xb900, 16, 3);
 	clks[IMX8MQ_CLK_WRCLK_PRE_DIV] = imx_clk_divider2("wrclk_pre_div", "wrclk_cg", base + 0xb980, 16, 3);
+	clks[IMX8MQ_CLK_CLKO1_PRE_DIV] = imx_clk_divider2("clko1_pre_div", "clko1_cg", base + 0xba00, 16, 3);
 	clks[IMX8MQ_CLK_CLKO2_PRE_DIV] = imx_clk_divider2("clko2_pre_div", "clko2_cg", base + 0xba80, 16, 3);
 	clks[IMX8MQ_CLK_DSI_CORE_PRE_DIV] = imx_clk_divider2("dsi_core_pre_div", "dsi_core_cg", base + 0xbb00, 16, 3);
 	clks[IMX8MQ_CLK_DSI_PHY_REF_PRE_DIV] = imx_clk_divider2("dsi_phy_ref_pre_div", "dsi_phy_ref_cg", base + 0xbb80, 16, 3);
@@ -740,6 +747,7 @@ static void __init imx8mq_clocks_init(struct device_node *ccm_node)
 	clks[IMX8MQ_CLK_GPT1_DIV] = imx_clk_divider2("gpt1_div", "gpt1_pre_div", base + 0xb580, 0, 6);
 	clks[IMX8MQ_CLK_WDOG_DIV] = imx_clk_divider2("wdog_div", "wdog_pre_div", base + 0xb900, 0, 6);
 	clks[IMX8MQ_CLK_WRCLK_DIV] = imx_clk_divider2("wrclk_div", "wrclk_pre_div", base + 0xb980, 0, 6);
+	clks[IMX8MQ_CLK_CLKO1_DIV] = imx_clk_divider2("clko1_div", "clko1_pre_div", base + 0xba00, 0, 6);
 	clks[IMX8MQ_CLK_CLKO2_DIV] = imx_clk_divider2("clko2_div", "clko2_pre_div", base + 0xba80, 0, 6);
 	clks[IMX8MQ_CLK_DSI_CORE_DIV] = imx_clk_divider2("dsi_core_div", "dsi_core_pre_div", base + 0xbb00, 0, 6);
 	clks[IMX8MQ_CLK_DSI_PHY_REF_DIV] = imx_clk_divider2("dsi_phy_ref_div", "dsi_phy_ref_pre_div", base + 0xbb80, 0, 6);
@@ -830,6 +838,10 @@ static void __init imx8mq_clocks_init(struct device_node *ccm_node)
 	clk_data.clk_num = ARRAY_SIZE(clks);
 	of_clk_add_provider(np, of_clk_src_onecell_get, &clk_data);
 
+       /* enable all the clocks just for bringup */
+       for (i = 0; i < ARRAY_SIZE(clks_init_on);  i++)
+		clk_prepare_enable(clks[clks_init_on[i]]);
+
 	clk_set_parent(clks[IMX8MQ_VIDEO2_PLL1_OUT], clks[IMX8MQ_VIDEO2_PLL1]);
 	clk_set_parent(clks[IMX8MQ_VIDEO2_PLL2_OUT], clks[IMX8MQ_VIDEO2_PLL2_DIV]);
 
@@ -856,6 +868,8 @@ static void __init imx8mq_clocks_init(struct device_node *ccm_node)
 	clk_set_parent(clks[IMX8MQ_CLK_CSI2_CORE_SRC], clks[IMX8MQ_SYS1_PLL_266M]);
 	clk_set_parent(clks[IMX8MQ_CLK_CSI2_PHY_REF_SRC], clks[IMX8MQ_SYS2_PLL_1000M]);
 	clk_set_parent(clks[IMX8MQ_CLK_CSI2_ESC_SRC], clks[IMX8MQ_SYS1_PLL_800M]);
+
+	pr_err("i.MX8MQ clock driver init done\n");
 }
 
 CLK_OF_DECLARE(imx8mq, "fsl,imx8mq-ccm", imx8mq_clocks_init);
