@@ -48,6 +48,7 @@
 			regulator-max-microvolt = <3300000>;
 			gpio = <&gpio2 19 GPIO_ACTIVE_HIGH>;
 			enable-active-high;
+			regulator-always-on;
 		};
 
 		reg_pwr_en: pwr_en {
@@ -492,16 +493,17 @@
 			MX8MQ_IOMUXC_SD2_CD_B_GPIO2_IO12
 			MX8MQ_IOMUXC_SD2_RESET_B_GPIO2_IO19
 			>;
-		drive-strength = <1>;
+		drive-strength = <3>;
 		slew-rate = <0>;
 		bias-pull-up;
 	};
 
 	pinctrl_usdhc2_vselect: usdhc2vselectgrp {
 		pinmux = <MX8MQ_IOMUXC_GPIO1_IO04_USDHC2_VSELECT>;
-		drive-strength = <1>;
+		drive-strength = <3>;
 		slew-rate = <0>;
 		bias-pull-up;
+		input-schmitt-enable;
 	};
 
 	pinctrl_usdhc2_clk: usdhc2clkgrp {
