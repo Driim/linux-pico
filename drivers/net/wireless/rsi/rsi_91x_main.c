@@ -42,15 +42,15 @@
 #include "rsi_coex.h"
 #endif
 
-u16 rsi_zone_enabled =	INFO_ZONE |
-			INIT_ZONE |
-			MGMT_TX_ZONE |
-			MGMT_RX_ZONE |
+u16 rsi_zone_enabled =	ERR_ZONE |
+			//INIT_ZONE |
+			//MGMT_TX_ZONE |
+			//MGMT_RX_ZONE |
 			//DATA_TX_ZONE |
 			//DATA_RX_ZONE |
 			//FSM_ZONE |
 			//ISR_ZONE |
-			ERR_ZONE |
+			//INFO_ZONE |
 			0;
 module_param(rsi_zone_enabled, ushort, S_IRUGO);
 MODULE_PARM_DESC(rsi_zone_enabled,
