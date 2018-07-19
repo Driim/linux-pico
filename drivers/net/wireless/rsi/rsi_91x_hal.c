@@ -301,6 +301,12 @@ int rsi_prepare_mgmt_desc(struct rsi_common *common,struct sk_buff *skb)
 
 	wh = (struct ieee80211_hdr *)&skb->data[header_size];
 	vif = rsi_get_vif(adapter, wh->addr2);
+	if(!vif) {
+		rsi_dbg(ERR_ZONE,
+			"%s: Failed to get vif\n", __func__);
+		status = -ENOSPC;
+		goto err;
+	}
 	vap_id = ((struct vif_priv *)vif->drv_priv)->vap_id;
 
 	desc = (__le16 *)skb->data;

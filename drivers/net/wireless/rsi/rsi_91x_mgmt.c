@@ -3031,7 +3031,8 @@ int rsi_send_probe_request(struct rsi_common *common,
 	q_num = MGMT_SOFT_Q;
 	skb->priority = q_num;
 
-	rsi_prepare_mgmt_desc(common,skb);
+	if(rsi_prepare_mgmt_desc(common,skb))
+		goto out;
 	skb_queue_tail(&common->tx_queue[MGMT_SOFT_Q], skb);
 	rsi_set_event(&common->tx_thread.event);
 	

@@ -603,6 +603,12 @@ static void rsi_mac80211_tx(struct ieee80211_hw *hw,
 	struct ieee80211_vif *vif = adapter->vifs[adapter->sc_nvifs - 1];
 	struct ieee80211_bss_conf *bss = &adapter->vifs[0]->bss_conf;
 
+	if ((memcmp(common->mac_addr, wlh->addr2, ETH_ALEN))) {
+		rsi_dbg(ERR_ZONE,
+				"%s: MAC ID not found and dropping this packets\n", __func__);
+		ieee80211_free_txskb(common->priv->hw, skb);
+		return;
+	}
 #ifdef CONFIG_RSI_WOW
 	if (common->wow_flags & RSI_WOW_ENABLED) {
 		ieee80211_free_txskb(common->priv->hw, skb);
