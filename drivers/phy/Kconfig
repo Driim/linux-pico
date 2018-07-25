@@ -44,7 +44,7 @@ config PHY_FSL_IMX8MQ_USB
        bool
        depends on OF
        select GENERIC_PHY
-       default ARCH_FSL_IMX8MQ
+       default HAVE_IMX8_SOC
 
 source "drivers/phy/allwinner/Kconfig"
 source "drivers/phy/amlogic/Kconfig"
