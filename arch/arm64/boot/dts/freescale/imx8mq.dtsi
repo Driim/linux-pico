@@ -102,6 +102,7 @@
 			compatible = "arm,cortex-a53";
 			reg = <0x0>;
 			enable-method = "psci";
+			clocks = <&clk IMX8MQ_ARM_PLL>;
 			next-level-cache = <&A53_L2>;
 			cpu-idle-states = <&CPU_SLEEP>;
 		};
@@ -813,10 +814,8 @@
 		compatible = "fsl,imx8mq-usb-phy";
 		#phy-cells = <1>;
 		reg = <0x0 0x381f0040 0x0 0x40>;
-		clocks = <&clk IMX8MQ_CLK_USB2_PHY_ROOT>,
-			<&clk IMX8MQ_CLK_USB_PHY_REF_SRC>,
-			 <&clk IMX8MQ_SYS1_PLL_100M>;
-		clock-names = "usb_phy_root_clk", "ref", "pll";
+		clocks = <&clk IMX8MQ_CLK_USB1_PHY_ROOT>;
+		clock-names = "usb_phy_root_clk";
 		assigned-clocks = <&clk IMX8MQ_CLK_USB_PHY_REF_SRC>;
 		assigned-clock-parents = <&clk IMX8MQ_SYS1_PLL_100M>;
 		assigned-clock-rates = <100000000>;
@@ -828,10 +827,8 @@
 		#address-cells = <2>;
 		#size-cells = <2>;
 		ranges = <0x0 0x38100000 0x0 0x38100000 0x0 0x10000>;
-		clocks = <&clk IMX8MQ_CLK_USB1_CTRL_ROOT>,
-			<&clk IMX8MQ_CLK_USB_BUS_SRC>,
-			<&clk IMX8MQ_CLK_USB_CORE_REF_SRC>;
-		clock-names = "usb1_ctrl_root_clk", "bus", "ref";
+		clocks = <&clk IMX8MQ_CLK_USB1_CTRL_ROOT>;
+		clock-names = "usb1_ctrl_root_clk";
 		assigned-clocks = <&clk IMX8MQ_CLK_USB_BUS_SRC>,
 				<&clk IMX8MQ_CLK_USB_CORE_REF_SRC>;
 		assigned-clock-parents = <&clk IMX8MQ_SYS2_PLL_500M>,
@@ -844,6 +841,11 @@
 			reg = <0x0 0x38100000 0x0 0x10000>;
 			interrupts = <GIC_SPI 40 IRQ_TYPE_LEVEL_HIGH>;
 			interrupt-parent = <&gpc>;
+			/* TODO: check these clock assignments */
+			clocks = <&clk IMX8MQ_CLK_USB1_CTRL_ROOT>,
+				<&clk IMX8MQ_CLK_USB_BUS_SRC>,
+				<&clk IMX8MQ_CLK_USB_CORE_REF_SRC>;
+			clock-names = "ref", "bus_early", "suspend";
 			phys = <&usb3_phy0 0>, <&usb3_phy0 1>;
 			phy-names = "usb2-phy", "usb3-phy";
 			power-domains = <&usb_otg1_pd>;
@@ -858,10 +860,8 @@
 		compatible = "fsl,imx8mq-usb-phy";
 		#phy-cells = <1>;
 		reg = <0x0 0x382f0040 0x0 0x40>;
-		clocks = <&clk IMX8MQ_CLK_USB2_PHY_ROOT>,
-			<&clk IMX8MQ_CLK_USB_PHY_REF_SRC>,
-			 <&clk IMX8MQ_SYS1_PLL_100M>;
-		clock-names = "usb_phy_root_clk", "ref", "pll";
+		clocks = <&clk IMX8MQ_CLK_USB2_PHY_ROOT>;
+		clock-names = "usb_phy_root_clk";
 		assigned-clocks = <&clk IMX8MQ_CLK_USB_PHY_REF_SRC>;
 		assigned-clock-parents = <&clk IMX8MQ_SYS1_PLL_100M>;
 		assigned-clock-rates = <100000000>;
@@ -873,10 +873,8 @@
 		#address-cells = <2>;
 		#size-cells = <2>;
 		ranges = <0x0 0x38200000 0x0 0x38200000 0x0 0x10000>;
-		clocks = <&clk IMX8MQ_CLK_USB2_CTRL_ROOT>,
-			<&clk IMX8MQ_CLK_USB_BUS_SRC>,
-			<&clk IMX8MQ_CLK_USB_CORE_REF_SRC>;
-		clock-names = "usb2_ctrl_root_clk", "bus", "ref";
+		clocks = <&clk IMX8MQ_CLK_USB2_CTRL_ROOT>;
+		clock-names = "usb2_ctrl_root_clk";
 		assigned-clocks = <&clk IMX8MQ_CLK_USB_BUS_SRC>,
 				<&clk IMX8MQ_CLK_USB_CORE_REF_SRC>;
 		assigned-clock-parents = <&clk IMX8MQ_SYS2_PLL_500M>,
@@ -889,6 +887,11 @@
 			reg = <0x0 0x38200000 0x0 0x10000>;
 			interrupts = <GIC_SPI 41 IRQ_TYPE_LEVEL_HIGH>;
 			interrupt-parent = <&gpc>;
+			/* TODO: check these clock assignments */
+			clocks = <&clk IMX8MQ_CLK_USB2_CTRL_ROOT>,
+				<&clk IMX8MQ_CLK_USB_BUS_SRC>,
+				<&clk IMX8MQ_CLK_USB_CORE_REF_SRC>;
+			clock-names = "ref", "bus_early", "suspend";
 			phys = <&usb3_phy1 0>, <&usb3_phy1 1>;
 			phy-names = "usb2-phy", "usb3-phy";
 			power-domains = <&usb_otg2_pd>;
