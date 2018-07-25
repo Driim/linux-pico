@@ -1001,7 +1001,7 @@
 	};
 
 	ds1339: rtc@68 {
-		compatible = "mxim,ds1339";
+		compatible = "dallas,ds1339";
 		reg = <0x68>;
 		/* RTC DS1339U-33+ nIRQ GPIO4_IO29 */
 		pinctrl-0 = <&pinctrl_rtc>;
