@@ -10,6 +10,8 @@
 //
 // Copyright 2004-2009 Freescale Semiconductor, Inc. All Rights Reserved.
 
+#define DEBUG
+
 #include <linux/init.h>
 #include <linux/iopoll.h>
 #include <linux/module.h>
@@ -166,6 +168,8 @@
 #define SDMA_WATERMARK_LEVEL_SPDIF	BIT(10)
 #define SDMA_WATERMARK_LEVEL_SP		BIT(11)
 #define SDMA_WATERMARK_LEVEL_DP		BIT(12)
+#define SDMA_WATERMARK_LEVEL_SD		BIT(13)
+#define SDMA_WATERMARK_LEVEL_DD		BIT(14)
 #define SDMA_WATERMARK_LEVEL_HWML	(0xFF << 16)
 #define SDMA_WATERMARK_LEVEL_LWE	BIT(28)
 #define SDMA_WATERMARK_LEVEL_HWE	BIT(29)
@@ -173,11 +177,16 @@
 
 #define SDMA_DMA_BUSWIDTHS	(BIT(DMA_SLAVE_BUSWIDTH_1_BYTE) | \
 				 BIT(DMA_SLAVE_BUSWIDTH_2_BYTES) | \
+				 BIT(DMA_SLAVE_BUSWIDTH_3_BYTES) | \
 				 BIT(DMA_SLAVE_BUSWIDTH_4_BYTES))
 
 #define SDMA_DMA_DIRECTIONS	(BIT(DMA_DEV_TO_MEM) | \
 				 BIT(DMA_MEM_TO_DEV) | \
 				 BIT(DMA_DEV_TO_DEV))
+
+#define SDMA_WATERMARK_LEVEL_FIFOS_OFF	8
+#define SDMA_WATERMARK_LEVEL_SW_DONE	BIT(23)
+#define SDMA_WATERMARK_LEVEL_SW_DONE_SEL_OFF 24
 
 /*
  * Mode/Count of data node descriptors - IPCv2
@@ -285,6 +294,7 @@ struct sdma_context_data {
 } __attribute__ ((packed));
 
 #define NUM_BD (int)(PAGE_SIZE / sizeof(struct sdma_buffer_descriptor))
+#define SDMA_BD_MAX_CNT	0xfffc /* align with 4 bytes */
 
 struct sdma_engine;
 
@@ -501,6 +511,12 @@ static struct sdma_driver_data sdma_imx7d = {
 	.script_addrs = &sdma_script_imx7d,
 };
 
+static struct sdma_driver_data sdma_imx8m = {
+	.chnenbl0 = SDMA_CHNENBL0_IMX35,
+	.num_events = 48,
+	.script_addrs = &sdma_script_imx7d,
+};
+
 static const struct platform_device_id sdma_devtypes[] = {
 	{
 		.name = "imx25-sdma",
@@ -524,6 +540,9 @@ static const struct platform_device_id sdma_devtypes[] = {
 		.name = "imx7d-sdma",
 		.driver_data = (unsigned long)&sdma_imx7d,
 	}, {
+		.name = "imx8mq-sdma",
+		.driver_data = (unsigned long)&sdma_imx8m,
+	}, {
 		/* sentinel */
 	}
 };
@@ -537,6 +556,7 @@ static const struct of_device_id sdma_dt_ids[] = {
 	{ .compatible = "fsl,imx31-sdma", .data = &sdma_imx31, },
 	{ .compatible = "fsl,imx25-sdma", .data = &sdma_imx25, },
 	{ .compatible = "fsl,imx7d-sdma", .data = &sdma_imx7d, },
+	{ .compatible = "fsl,imx8mq-sdma", .data = &sdma_imx8m, },
 	{ /* sentinel */ }
 };
 MODULE_DEVICE_TABLE(of, sdma_dt_ids);
@@ -631,7 +651,7 @@ static int sdma_load_script(struct sdma_engine *sdma, void *buf, int size,
 	int ret;
 	unsigned long flags;
 
-	buf_virt = dma_alloc_coherent(NULL,
+	buf_virt = dma_alloc_coherent(sdma->dev,
 			size,
 			&buf_phys, GFP_KERNEL);
 	if (!buf_virt) {
@@ -1096,7 +1116,7 @@ static int sdma_request_channel(struct sdma_channel *sdmac)
 	int channel = sdmac->channel;
 	int ret = -EBUSY;
 
-	sdmac->bd = dma_zalloc_coherent(NULL, PAGE_SIZE, &sdmac->bd_phys,
+	sdmac->bd = dma_zalloc_coherent(sdma->dev, PAGE_SIZE, &sdmac->bd_phys,
 					GFP_KERNEL);
 	if (!sdmac->bd) {
 		ret = -ENOMEM;
@@ -1614,22 +1634,28 @@ static int sdma_init(struct sdma_engine *sdma)
 	dma_addr_t ccb_phys;
 
 	ret = clk_enable(sdma->clk_ipg);
-	if (ret)
+	if (ret) {
+		dev_err(sdma->dev, "enable ipg clk failed\n");
 		return ret;
+	};
 	ret = clk_enable(sdma->clk_ahb);
-	if (ret)
+	if (ret) {
+		dev_err(sdma->dev, "enable  clk failed\n");
 		goto disable_clk_ipg;
+	}
 
 	/* Be sure SDMA has not started yet */
 	writel_relaxed(0, sdma->regs + SDMA_H_C0PTR);
 
-	sdma->channel_control = dma_alloc_coherent(NULL,
+	sdma->channel_control = dma_alloc_coherent(sdma->dev,
 			MAX_DMA_CHANNELS * sizeof (struct sdma_channel_control) +
 			sizeof(struct sdma_context_data),
 			&ccb_phys, GFP_KERNEL);
-
 	if (!sdma->channel_control) {
 		ret = -ENOMEM;
+		dev_err(sdma->dev, "dma_alloc_coherent failed %ld\n",
+			MAX_DMA_CHANNELS * sizeof (struct sdma_channel_control)
+			+ sizeof(struct sdma_context_data));
 		goto err_dma_alloc;
 	}
 
@@ -1651,8 +1677,10 @@ static int sdma_init(struct sdma_engine *sdma)
 		writel_relaxed(0, sdma->regs + SDMA_CHNPRI_0 + i * 4);
 
 	ret = sdma_request_channel(&sdma->channel[0]);
-	if (ret)
+	if (ret) {
+		dev_err(sdma->dev, "sdma_request_channel failed\n");
 		goto err_dma_alloc;
+	};
 
 	sdma_config_ownership(&sdma->channel[0], false, true, false);
 
@@ -1748,12 +1776,16 @@ static int sdma_probe(struct platform_device *pdev)
 	}
 
 	ret = dma_coerce_mask_and_coherent(&pdev->dev, DMA_BIT_MASK(32));
-	if (ret)
+	if (ret) {
+		dev_err(&pdev->dev, "dma_coerce_mask_and_coherent failed\n");
 		return ret;
+	};
 
 	sdma = devm_kzalloc(&pdev->dev, sizeof(*sdma), GFP_KERNEL);
-	if (!sdma)
+	if (!sdma) {
+		dev_err(&pdev->dev, "devm kzalloc failed\n");
 		return -ENOMEM;
+	};
 
 	spin_lock_init(&sdma->channel_0_lock);
 
@@ -1761,39 +1793,54 @@ static int sdma_probe(struct platform_device *pdev)
 	sdma->drvdata = drvdata;
 
 	irq = platform_get_irq(pdev, 0);
-	if (irq < 0)
+	if (irq < 0) {
+		dev_err(&pdev->dev, "get irq failed\n");
 		return irq;
+	};
 
 	iores = platform_get_resource(pdev, IORESOURCE_MEM, 0);
 	sdma->regs = devm_ioremap_resource(&pdev->dev, iores);
-	if (IS_ERR(sdma->regs))
+	if (IS_ERR(sdma->regs)) {
+		dev_err(&pdev->dev, "ioremap failed\n");
 		return PTR_ERR(sdma->regs);
+	};
 
 	sdma->clk_ipg = devm_clk_get(&pdev->dev, "ipg");
-	if (IS_ERR(sdma->clk_ipg))
+	if (IS_ERR(sdma->clk_ipg)) {
+		dev_err(&pdev->dev, "get ipg failed\n");
 		return PTR_ERR(sdma->clk_ipg);
+	};
 
 	sdma->clk_ahb = devm_clk_get(&pdev->dev, "ahb");
-	if (IS_ERR(sdma->clk_ahb))
+	if (IS_ERR(sdma->clk_ahb)) {
+		dev_err(&pdev->dev, "get ahb failed\n");
 		return PTR_ERR(sdma->clk_ahb);
+	};
 
 	ret = clk_prepare(sdma->clk_ipg);
-	if (ret)
+	if (ret) {
+		dev_err(&pdev->dev, "prepare ipg failed\n");
 		return ret;
+	};
 
 	ret = clk_prepare(sdma->clk_ahb);
-	if (ret)
+	if (ret) {
+		dev_err(&pdev->dev, "prepare ahb failed\n");
 		goto err_clk;
+	};
 
 	ret = devm_request_irq(&pdev->dev, irq, sdma_int_handler, 0, "sdma",
 			       sdma);
-	if (ret)
+	if (ret) {
+		dev_err(&pdev->dev, "reques irq failed\n");
 		goto err_irq;
+	};
 
 	sdma->irq = irq;
 
 	sdma->script_addrs = kzalloc(sizeof(*sdma->script_addrs), GFP_KERNEL);
 	if (!sdma->script_addrs) {
+		dev_err(&pdev->dev, "script addr kzalloc failed\n");
 		ret = -ENOMEM;
 		goto err_irq;
 	}
@@ -1831,12 +1878,16 @@ static int sdma_probe(struct platform_device *pdev)
 	}
 
 	ret = sdma_init(sdma);
-	if (ret)
+	if (ret) {
+		dev_err(&pdev->dev, "sdma init failed %d\n", ret);
 		goto err_init;
+	};
 
 	ret = sdma_event_remap(sdma);
-	if (ret)
+	if (ret) { 
+		dev_err(&pdev->dev, "sdma event remap failed\n");
 		goto err_init;
+	};
 
 	if (sdma->drvdata->script_addrs)
 		sdma_add_scripts(sdma, sdma->drvdata->script_addrs);
@@ -1846,7 +1897,7 @@ static int sdma_probe(struct platform_device *pdev)
 	if (pdata) {
 		ret = sdma_get_firmware(sdma, pdata->fw_name);
 		if (ret)
-			dev_warn(&pdev->dev, "failed to get firmware from platform data\n");
+			dev_err(&pdev->dev, "failed to get firmware from platform data\n");
 	} else {
 		/*
 		 * Because that device tree does not encode ROM script address,
@@ -1856,11 +1907,11 @@ static int sdma_probe(struct platform_device *pdev)
 		ret = of_property_read_string(np, "fsl,sdma-ram-script-name",
 					      &fw_name);
 		if (ret)
-			dev_warn(&pdev->dev, "failed to get firmware name\n");
+			dev_err(&pdev->dev, "failed to get firmware name\n");
 		else {
 			ret = sdma_get_firmware(sdma, fw_name);
 			if (ret)
-				dev_warn(&pdev->dev, "failed to get firmware from device tree\n");
+				dev_err(&pdev->dev, "failed to get firmware from device tree\n");
 		}
 	}
 
