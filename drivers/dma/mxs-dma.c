@@ -131,6 +131,7 @@ enum mxs_dma_devtype {
 enum mxs_dma_id {
 	IMX23_DMA,
 	IMX28_DMA,
+	IMX7D_DMA,
 };
 
 struct mxs_dma_engine {
@@ -163,6 +164,9 @@ static struct mxs_dma_type mxs_dma_types[] = {
 	}, {
 		.id = IMX28_DMA,
 		.type = MXS_DMA_APBX,
+	}, {
+		.id = IMX7D_DMA,
+		.type = MXS_DMA_APBH,
 	}
 };
 
@@ -180,6 +184,9 @@ static const struct platform_device_id mxs_dma_ids[] = {
 		.name = "imx28-dma-apbx",
 		.driver_data = (kernel_ulong_t) &mxs_dma_types[3],
 	}, {
+		.name = "imx7d-dma-apbh",
+		.driver_data = (kernel_ulong_t) &mxs_dma_types[4],
+	}, {
 		/* end of list */
 	}
 };
@@ -189,6 +196,7 @@ static const struct of_device_id mxs_dma_dt_ids[] = {
 	{ .compatible = "fsl,imx23-dma-apbx", .data = &mxs_dma_ids[1], },
 	{ .compatible = "fsl,imx28-dma-apbh", .data = &mxs_dma_ids[2], },
 	{ .compatible = "fsl,imx28-dma-apbx", .data = &mxs_dma_ids[3], },
+	{ .compatible = "fsl,imx7d-dma-apbh", .data = &mxs_dma_ids[4], },
 	{ /* sentinel */ }
 };
 MODULE_DEVICE_TABLE(of, mxs_dma_dt_ids);
@@ -421,17 +429,25 @@ static int mxs_dma_alloc_chan_resources(struct dma_chan *chan)
 					    &mxs_chan->ccw_phys, GFP_KERNEL);
 	if (!mxs_chan->ccw) {
 		ret = -ENOMEM;
+		dev_err(mxs_dma->dma_device.dev,
+			"%s: dma_zalloc_coherent failed\n", __func__);
 		goto err_alloc;
 	}
 
 	ret = request_irq(mxs_chan->chan_irq, mxs_dma_int_handler,
 			  0, "mxs-dma", mxs_dma);
-	if (ret)
+	if (ret) {
+		dev_err(mxs_dma->dma_device.dev,
+			"%s: reques_irq failed\n", __func__);
 		goto err_irq;
+	};
 
 	ret = clk_prepare_enable(mxs_dma->clk);
-	if (ret)
+	if (ret) {
+		dev_err(mxs_dma->dma_device.dev,
+			"%s: clk_prepare_enable failed\n", __func__);
 		goto err_clk;
+	};
 
 	mxs_dma_reset_chan(chan);
 
