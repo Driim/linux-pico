@@ -1249,14 +1249,9 @@
 	dc-supply = <&buck2_reg>;
 };
 
-#if 0
 &dcss {
 	status = "okay";
 
-#ifndef MIPI_DSI_ENABLE
-	disp-dev = "hdmi_disp";
-	disp-mode = <5>;
-#else
 	disp-dev = "mipi_disp";
 	assigned-clocks = <&clk IMX8MQ_CLK_DISP_AXI_SRC>,
 			  <&clk IMX8MQ_CLK_DISP_APB_SRC>,
@@ -1281,25 +1276,11 @@
 			       <599999999>;
 	dcss_disp0: port@0 {
 		reg = <0>;
-		dcss_disp0_mipi_dsi: mipi_dsi {
+		dcss_disp0_mipi_dsi: endpoint {
 			remote-endpoint = <&mipi_dsi_in>;
 		};
 	};
-#endif
 };
-#endif
-
-#ifndef MIPI_DSI_ENABLE
-#if TODO
-&hdmi {
-	status = "okay";
-};
-
-&hdmi_cec {
-	status = "okay";
-};
-#endif
-#else
 
 &mipi_dsi_phy {
 	status = "okay";
@@ -1347,7 +1328,6 @@
 		};
 	};
 };
-#endif /* MIPI_DSI_ENABLE */
 
 #if TODO
 &csi1_bridge {
@@ -1406,6 +1386,7 @@
 	};
 };
 
+#endif
 &pwm1 {
 	pinctrl-names = "default";
 	pinctrl-0 = <&pinctrl_pwm1>;
@@ -1433,5 +1414,4 @@
 	status = "okay";
 #endif
 };
-#endif
 
