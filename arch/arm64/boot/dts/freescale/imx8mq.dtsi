@@ -512,7 +512,7 @@
 		reg = <0x0 0x32e2d000 0x0 0x1000>;
 		interrupts = <GIC_SPI 18 IRQ_TYPE_LEVEL_HIGH>;
 		interrupt-controller;
-		interrupt-parent = <&gpc>;
+		interrupt-parent = <&gic>;
 		#interrupt-cells = <2>;
 		nxp,irqsteer_chans = <2>;
 		nxp,endian = <1>;		/* MSB */
@@ -584,10 +584,35 @@
 		dcss_disp0: port@0 {
 			reg = <0>;
 
-			dcss_disp0_hdmi: endpoint {
+			dcss_disp0_hdmi: hdmi-endpoint {
 				remote-endpoint = <&hdmi_disp>;
 			};
 		};
+	};
+
+	hdmi: hdmi@32c00000 {
+		#address-cells = <1>;
+		#size-cells = <0>;
+		compatible = "fsl,imx8mq-hdmi";
+		reg = <0x0 0x32c00000 0x0 0x33800>,	/* HDP registers */
+				<0x0 0x32e40000 0x0 0x40000>;   /* HDP SEC register */
+		interrupts = <GIC_SPI 16 IRQ_TYPE_LEVEL_HIGH>,
+					<GIC_SPI 25 IRQ_TYPE_LEVEL_HIGH>;
+		interrupt-names = "plug_in", "plug_out";
+		interrupt-parent = <&gic>;
+		status = "disabled";
+
+		port@0 {
+			reg = <0>;
+			hdmi_disp: endpoint {
+				remote-endpoint = <&dcss_disp0_hdmi>;
+			};
+		};
+	};
+
+	display-subsystem {
+		compatible = "fsl,imx-display-subsystem";
+		ports = <&dcss_disp0>;
 	};
 
 	mipi_dsi_phy: dsi_phy@30A00300 {
@@ -643,26 +668,6 @@
 		port@0 {
 			mipi_dsi_out: endpoint {
 				remote-endpoint = <&mipi_dsi_bridge_in>;
-			};
-		};
-	};
-
-	hdmi: hdmi@32c00000 {
-		#address-cells = <1>;
-		#size-cells = <0>;
-		compatible = "fsl,imx8mq-hdmi";
-		reg = <0x0 0x32c00000 0x0 0x33800>,	/* HDP registers */
-				<0x0 0x32e40000 0x0 0x40000>;   /* HDP SEC register */
-		interrupts = <GIC_SPI 16 IRQ_TYPE_LEVEL_HIGH>,
-					<GIC_SPI 25 IRQ_TYPE_LEVEL_HIGH>;
-		interrupt-names = "plug_in", "plug_out";
-		interrupt-parent = <&gpc>;
-		status = "disabled";
-
-		port@0 {
-			reg = <0>;
-			hdmi_disp: endpoint {
-				remote-endpoint = <&dcss_disp0_hdmi>;
 			};
 		};
 	};
