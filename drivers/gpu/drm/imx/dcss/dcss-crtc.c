@@ -205,7 +205,8 @@ int dcss_crtc_get_opipe_cfg(struct drm_crtc *crtc,
 	return 0;
 }
 
-static void dcss_crtc_enable(struct drm_crtc *crtc)
+static void dcss_crtc_enable(struct drm_crtc *crtc,
+			     struct drm_crtc_state *old_state)
 {
 	struct dcss_crtc *dcss_crtc = container_of(crtc, struct dcss_crtc,
 						   base);
@@ -266,7 +267,7 @@ static const struct drm_crtc_helper_funcs dcss_helper_funcs = {
 	.atomic_check = dcss_crtc_atomic_check,
 	.atomic_begin = dcss_crtc_atomic_begin,
 	.atomic_flush = dcss_crtc_atomic_flush,
-	.enable = dcss_crtc_enable,
+	.atomic_enable = dcss_crtc_enable,
 	.atomic_disable = dcss_crtc_atomic_disable,
 };
 
