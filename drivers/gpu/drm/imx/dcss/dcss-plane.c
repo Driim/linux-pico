@@ -168,7 +168,6 @@ static const struct drm_plane_funcs dcss_plane_funcs = {
 	.reset		= drm_atomic_helper_plane_reset,
 	.atomic_duplicate_state	= drm_atomic_helper_plane_duplicate_state,
 	.atomic_destroy_state	= drm_atomic_helper_plane_destroy_state,
-	.set_property = drm_atomic_helper_plane_set_property,
 	.atomic_set_property = dcss_plane_atomic_set_property,
 	.atomic_get_property = dcss_plane_atomic_get_property,
 	.format_mod_supported = dcss_plane_format_mod_supported,
