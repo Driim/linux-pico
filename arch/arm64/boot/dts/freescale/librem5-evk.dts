@@ -192,7 +192,7 @@
 				MX8MQ_IOMUXC_NAND_DATA07_GPIO3_IO13	0x16
 			>;
 		};
-
+		
 		pinctrl_fec1: fec1grp {
 			fsl,pins = <
 				MX8MQ_IOMUXC_ENET_MDC_ENET1_MDC		0x3
@@ -431,12 +431,19 @@
 			>;
 		};
 
-		pinctrl_pwm1: pwm1 {
+		pinctrl_goodix_ts: gt1x {
 			fsl,pins = <
-				MX8MQ_IOMUXC_SPDIF_EXT_CLK_PWM1_OUT 0xc6
+				MX8MQ_IOMUXC_NAND_ALE_GPIO3_IO0		0x16	/* TOUCH INT */
+				MX8MQ_IOMUXC_SAI1_MCLK_GPIO4_IO20	0x16	/* TOUCH RST */
 			>;
 		};
 
+		pinctrl_pwm1: pwm1 {
+			fsl,pins = <
+				MX8MQ_IOMUXC_GPIO1_IO01_PWM1_OUT 0xc6
+			>;
+		};
+		
 		pinctrl_pwm2: pwm2 {
 			fsl,pins = <
 				MX8MQ_IOMUXC_SPDIF_RX_PWM2_OUT 0xc6
@@ -707,6 +714,17 @@
 		};
 	};
 
+	goodix_ts@5d {
+		compatible = "goodix,gt1x";
+		pinctrl-names = "default";
+		pinctrl-0 = <&pinctrl_goodix_ts>;
+		reg = <0x5d>;
+		interrupt-parent = <&gpio3>;
+		interrupts = <0  IRQ_TYPE_LEVEL_LOW>;
+		goodix,rst-gpio = <&gpio4 20 GPIO_ACTIVE_LOW>;
+		goodix,irq-gpio = <&gpio3 0 GPIO_ACTIVE_LOW>;
+	};
+
 	typec_ptn5100: ptn5110@50 {
 		compatible = "usb,tcpci";
 		pinctrl-names = "default";
@@ -815,17 +833,6 @@
 #else
 	status = "disabled";
 #endif
-
-	touch: touch@4a { /* atmxt2952t2 */
-		compatible = "atmel,maxtouch";
-		reg = <0x4a>;
-
-		wakeup-source;
-
-		interrupt-parent = <&gpio3>;
-		interrupts = <8 IRQ_TYPE_LEVEL_LOW>;
-		resets = <&touch_reset>; /* active-low GPIO3_IO9, 10 ms delay */
-	};
 
 	charger: charger@6b { /* bq25896 */
 		compatible = "ti,bq25896";
