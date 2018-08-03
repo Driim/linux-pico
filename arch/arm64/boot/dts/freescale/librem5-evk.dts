@@ -1291,6 +1291,10 @@
 	};
 };
 
+&hdmi {
+        status = "disabled";
+};
+
 &mipi_dsi_phy {
 	status = "okay";
 };
