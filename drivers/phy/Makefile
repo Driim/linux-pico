@@ -15,6 +15,7 @@ obj-$(CONFIG_ARCH_RENESAS)		+= renesas/
 obj-$(CONFIG_ARCH_ROCKCHIP)		+= rockchip/
 obj-$(CONFIG_ARCH_TEGRA)		+= tegra/
 obj-$(CONFIG_PHY_FSL_IMX8MQ_USB)       += phy-fsl-imx8mq-usb.o
+obj-$(CONFIG_PHY_MIXEL_MIPI_DSI)        += phy-mixel-mipi-dsi.o
 obj-y					+= broadcom/	\
 					   hisilicon/	\
 					   marvell/	\
