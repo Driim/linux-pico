@@ -1327,7 +1327,7 @@
 &mipi_dsi_bridge {
 	status = "okay";
 	panel@0 {
-		compatible = "orisetech,otm8009a";
+		compatible = "emcraft,frd55";
 		reg = <0>;
 		port {
 			panel1_in: endpoint {
