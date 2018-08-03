@@ -64,7 +64,7 @@ static int dcss_drm_atomic_commit(struct drm_device *drm,
 	 * If the plane fb has an dma-buf attached, fish out the exclusive
 	 * fence for the atomic helper to wait on.
 	 */
-	for_each_plane_in_new_state(state, plane, plane_state, i) {
+	for_each_new_plane_in_state(state, plane, plane_state, i) {
 		if ((plane->state->fb != plane_state->fb) && plane_state->fb) {
 			dma_buf = drm_fb_cma_get_gem_obj(plane_state->fb,
 							 0)->base.dma_buf;
@@ -86,7 +86,7 @@ static void dcss_kms_setup_output_pipe(struct drm_atomic_state *state)
 	struct drm_display_info *di;
 	int i;
 
-	for_each_connector_in_new_state(state, connector, conn_state, i) {
+	for_each_new_connector_in_state(state, connector, conn_state, i) {
 		if (!connector->state->best_encoder)
 			continue;
 
@@ -97,8 +97,8 @@ static void dcss_kms_setup_output_pipe(struct drm_atomic_state *state)
 		crtc = connector->state->crtc;
 		di = &connector->display_info;
 
-		dcss_crtc_setup_opipe(crtc, connector, di->hdmi.colorimetry,
-				      di->hdmi.hdr_panel_metadata.eotf,
+		dcss_crtc_setup_opipe(crtc, connector, G_REC601_PAL,
+				      NL_REC709,
 				      HDMI_QUANTIZATION_RANGE_FULL);
 	}
 }
