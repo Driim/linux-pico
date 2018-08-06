@@ -704,7 +704,7 @@ static int imx_nwl_dsi_bridge_attach(struct drm_bridge *bridge)
 
 	/* Attach the next bridge in chain */
 	nwl_dsi_add_bridge(encoder, dsi->next_bridge);
-	ret = drm_bridge_attach(encoder->dev, dsi->next_bridge);
+	ret = drm_bridge_attach(encoder, dsi->next_bridge, NULL);
 	if (ret) {
 		DRM_DEV_ERROR(dsi->dev, "Failed to attach bridge! (%d)\n",
 			      ret);
@@ -720,7 +720,6 @@ static void imx_nwl_dsi_bridge_detach(struct drm_bridge *bridge)
 
 	DRM_DEV_DEBUG_DRIVER(dsi->dev, "id = %s\n",
 			     (dsi->instance)?"DSI1":"DSI0");
-	drm_bridge_detach(dsi->next_bridge);
 	nwl_dsi_del_bridge(dsi->next_bridge->encoder, dsi->next_bridge);
 }
 
@@ -875,7 +874,7 @@ static int imx_nwl_dsi_bind(struct device *dev,
 
 	dsi->next_bridge->encoder = &dsi->encoder;
 	dsi->encoder.bridge = dsi->next_bridge;
-	ret = drm_bridge_attach(dsi->encoder.dev, dsi->next_bridge);
+	ret = drm_bridge_attach(&dsi->encoder, dsi->next_bridge, NULL);
 	if (ret)
 		drm_encoder_cleanup(&dsi->encoder);
 
@@ -897,8 +896,6 @@ static void imx_nwl_dsi_unbind(struct device *dev,
 	 */
 	if (dsi->next_bridge)
 		next_bridge = of_drm_find_bridge(dsi->next_bridge->of_node);
-	if (next_bridge)
-		drm_bridge_detach(next_bridge);
 	dsi->next_bridge = next_bridge;
 
 	if (dsi->enabled)
@@ -983,12 +980,7 @@ static int imx_nwl_dsi_probe(struct platform_device *pdev)
 		dsi->bridge.funcs = &imx_nwl_dsi_bridge_funcs;
 		dsi->bridge.of_node = np;
 
-		ret = drm_bridge_add(&dsi->bridge);
-		if (ret) {
-			dev_err(dev, "Failed to add imx-nwl-dsi bridge (%d)\n",
-				ret);
-			return ret;
-		}
+		drm_bridge_add(&dsi->bridge);
 		dev_info(dev, "Added drm bridge!");
 		return 0;
 	}
