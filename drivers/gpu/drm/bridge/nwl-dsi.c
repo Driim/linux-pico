@@ -881,7 +881,6 @@ static int nwl_dsi_connector_get_modes(struct drm_connector *connector)
 }
 
 static const struct drm_connector_funcs nwl_dsi_connector_funcs = {
-	.dpms = drm_atomic_helper_connector_dpms,
 	.detect = nwl_dsi_connector_detect,
 	.fill_modes = drm_helper_probe_single_connector_modes,
 	.destroy = drm_connector_cleanup,
@@ -933,7 +932,7 @@ static int nwl_dsi_attach_next_bridge(struct drm_encoder *encoder,
 	/* Attach the next bridge in chain */
 	if (!nwl_dsi_add_bridge(encoder, bridge))
 		return -EEXIST;
-	ret = drm_bridge_attach(encoder->dev, bridge);
+	ret = drm_bridge_attach(encoder, bridge, NULL);
 	if (ret)
 		nwl_dsi_del_bridge(encoder, bridge);
 
@@ -1002,7 +1001,6 @@ static void nwl_dsi_bridge_detach(struct drm_bridge *bridge)
 		drm_connector_cleanup(&dsi->connector);
 		dsi->panel = NULL;
 	} else if (dsi->next_bridge) {
-		drm_bridge_detach(dsi->next_bridge);
 		nwl_dsi_del_bridge(dsi->next_bridge->encoder, dsi->next_bridge);
 		dsi->next_bridge = NULL;
 	}
@@ -1173,11 +1171,8 @@ static int nwl_dsi_probe(struct platform_device *pdev)
 	dsi->bridge.funcs = &nwl_dsi_bridge_funcs;
 	dsi->bridge.of_node = dev->of_node;
 
-	ret = drm_bridge_add(&dsi->bridge);
-	if (ret < 0)
-		dev_err(dev, "Failed to add nwl-dsi bridge (%d)\n", ret);
-
-	return ret;
+	drm_bridge_add(&dsi->bridge);
+	return 0;
 }
 
 static int nwl_dsi_remove(struct platform_device *pdev)
