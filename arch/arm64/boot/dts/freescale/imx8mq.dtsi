@@ -28,6 +28,8 @@
 		serial1 = &uart2;
 		serial2 = &uart3;
 		serial3 = &uart4;
+		dsi_phy0 = &mipi_dsi_phy;
+		mipi_dsi0 = &mipi_dsi;
 	};
 
 	ckil: clk-ckil {
@@ -584,7 +586,7 @@
 		dcss_disp0: port@0 {
 			reg = <0>;
 
-			dcss_disp0_hdmi: hdmi-endpoint {
+			dcss_disp0_hdmi: endpoint {
 				remote-endpoint = <&hdmi_disp>;
 			};
 		};
