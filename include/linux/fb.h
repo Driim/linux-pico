@@ -198,6 +198,7 @@ static inline int fb_notifier_call_chain(unsigned long val, void *v)
 #endif
 
 /*
+
  * Pixmap structure definition
  *
  * The purpose of this structure is to translate data
