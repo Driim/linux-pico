@@ -167,14 +167,16 @@
 	};
 
 	gpu_3d: gpu@38000000 {
-		 compatible = "vivante,gc";
-		 reg = <0x0 0x38000000 0 0x40000>;
-		 interrupts = <GIC_SPI 3 IRQ_TYPE_LEVEL_HIGH>;
-		 clocks = <&clk IMX8MQ_CLK_GPU_AXI_SRC>,
-			  <&clk IMX8MQ_CLK_GPU_CORE_SRC>,
-			  <&clk IMX8MQ_CLK_GPU_SHADER_SRC>;
-		 clock-names = "bus", "core", "shader";
-		 power-domains = <&gpu_pd>;
+		compatible = "vivante,gc";
+		reg = <0x0 0x38000000 0 0x40000>;
+		interrupts = <GIC_SPI 3 IRQ_TYPE_LEVEL_HIGH>;
+		clocks = <&clk IMX8MQ_CLK_GPU_AXI_DIV>,
+			 <&clk IMX8MQ_CLK_GPU_AHB_DIV>,
+			 <&clk IMX8MQ_CLK_GPU_CORE_DIV>,
+			 <&clk IMX8MQ_CLK_GPU_SHADER_DIV>;
+		clock-names = "bus", "reg", "core", "shader";
+		power-domains = <&gpu_pd>;
+		status = "disabled";
 	};
 
 	mipi_pd: gpc_power_domain@0 {

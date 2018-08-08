@@ -1002,15 +1002,15 @@
 //	power-supply = <&sw1c_reg>;
 };
 
-&gpu {
-	status = "okay";
-};
-
 &vpu {
 	status = "okay";
 };
 
 #endif
+
+&gpu_3d {
+	status = "okay";
+};
 
 &wdog1 {
 	pinctrl-names = "default";
