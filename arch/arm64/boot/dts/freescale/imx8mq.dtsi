@@ -186,6 +186,13 @@
 		domain-name = "MIPI_PD";
 	};
 
+
+	hdmi_cec: hdmi_cec@32c33800 {
+		compatible = "fsl,imx8-hdp-cec";
+		reg = <0x0 0x32c33800 0x0 0x200>;
+		status = "disabled";
+	};
+
 	pcie0_pd: gpc_power_domain@1 {
 		compatible = "fsl,imx8mq-pm-domain";
 		#power-domain-cells = <0>;

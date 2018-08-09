@@ -15,6 +15,11 @@
 /dts-v1/;
 
 /*
+ * Define this to use HDMI instead of MIPI DSI
+#define USE_HDMI
+ */
+
+/*
  * Define this to enable i2c3 channel instead of pwm4 on IMX8M-SOM-BSB
  * #define I2C3_ENABLE
  */
@@ -1047,6 +1052,10 @@
 &dcss {
 	status = "okay";
 
+#ifdef USE_HDMI
+	disp-dev = "hdmi_disp";
+	disp-mode = <5>;
+#else
 	disp-dev = "mipi_disp";
 	assigned-clocks = <&clk IMX8MQ_CLK_DISP_AXI_SRC>,
 			  <&clk IMX8MQ_CLK_DISP_APB_SRC>,
@@ -1075,7 +1084,21 @@
 			remote-endpoint = <&mipi_dsi_in>;
 		};
 	};
+#endif /* USE_HDMI */
 };
+
+#ifdef USE_HDMI
+
+&hdmi {
+	status = "okay";
+};
+
+&hdmi_cec {
+	/* TODO */
+	status = "disabled";
+};
+
+#else
 
 &hdmi {
         status = "disabled";
@@ -1127,6 +1150,8 @@
 		};
 	};
 };
+
+#endif /* USE_HDMI */
 
 #if TODO
 &csi1_bridge {
