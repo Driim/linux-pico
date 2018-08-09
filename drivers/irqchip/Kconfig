@@ -288,7 +288,7 @@ config IMX_GPCV2
 	  Enables the wakeup IRQs for IMX platforms with GPCv2 block
 
 config IMX_IRQSTEER
-	def_bool y if ARCH_MXC_ARM64
+	def_bool y if ARCH_MXC
 	select IRQ_DOMAIN
 	help
 	  Enables the IRQ Steer for NXP IMX platforms
