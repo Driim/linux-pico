@@ -592,8 +592,19 @@ static int etnaviv_pdev_probe(struct platform_device *pdev)
 {
 	struct device *dev = &pdev->dev;
 	struct component_match *match = NULL;
+	int ret;
 
-	dma_set_coherent_mask(&pdev->dev, DMA_BIT_MASK(32));
+	ret = of_dma_configure(dev, NULL, true);
+	if (ret) {
+		dev_err(&pdev->dev, "Setting up dma ops failed\n");
+		return ret;
+	};
+
+	ret = dma_coerce_mask_and_coherent(&pdev->dev, DMA_BIT_MASK(32));
+	if (ret) {
+		dev_err(&pdev->dev, "dma_coerce_mask_and_coherent failed\n");
+		return ret;
+	};
 
 	if (!dev->platform_data) {
 		struct device_node *core_node;
