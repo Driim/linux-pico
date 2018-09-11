@@ -2462,9 +2462,7 @@ static int tcpm_init_vbus(struct tcpm_port *port)
 {
 	int ret;
 
-	ret = port->tcpc->set_vbus(port->tcpc, false, false);
-	port->vbus_source = false;
-	port->vbus_charge = false;
+	ret = port->tcpc->set_vbus(port->tcpc, port->vbus_source, port->vbus_charge);
 	return ret;
 }
 
@@ -4265,6 +4263,16 @@ static int tcpm_fw_get_caps(struct tcpm_port *port,
 	if (port->typec_caps.type < 0)
 		return -EINVAL;
 	port->port_type = port->typec_caps.type;
+
+	if (fwnode_property_present(fwnode, "init-vbus-source"))
+		port->vbus_source = true;
+	else
+		port->vbus_source = false;
+
+	if (fwnode_property_present(fwnode, "init-vbus-sink"))
+	        port->vbus_charge = true;
+	else
+	        port->vbus_charge = false;
 
 	if (port->port_type == TYPEC_PORT_SNK)
 		goto sink;

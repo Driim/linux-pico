@@ -15,6 +15,12 @@ Required sub-node:
   of connector node are specified in
   Documentation/devicetree/bindings/connector/usb-connector.txt
 
+Optional properties for usb-c-connector sub-node:
+- init-vbus-source: set the initalization value for vbus-source to true.
+  If this property is not present the initial value will be false.
+- init-vbus-sink: set the initalization value for vbus-sink to true.
+  If this property is not present the initial value will be false.
+
 Example:
 
 ptn5110@50 {
