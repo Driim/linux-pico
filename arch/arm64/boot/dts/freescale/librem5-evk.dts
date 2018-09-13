@@ -749,6 +749,8 @@
 			sink-pdos = <PDO_FIXED(5000, 2000, PDO_FIXED_USB_COMM)
 				     PDO_VAR(5000, 12000, 2000)>;
 			op-sink-microwatt = <10000000>;
+			init-vbus-sink;
+			init-vbus-source;
 			ports {
 				#address-cells = <1>;
 				#size-cells = <0>;
