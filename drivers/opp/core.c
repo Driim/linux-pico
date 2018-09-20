@@ -694,8 +694,10 @@ int dev_pm_opp_set_rate(struct device *dev, unsigned long target_freq)
 		goto put_old_opp;
 	}
 
+#ifdef OPP_DEBUG
 	dev_dbg(dev, "%s: switching OPP: %lu Hz --> %lu Hz\n", __func__,
 		old_freq, freq);
+#endif
 
 	/* Only frequency scaling */
 	if (!opp_table->regulators) {
