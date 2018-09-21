@@ -61,7 +61,8 @@
 #define BT_BER 				0x11
 #define BT_CW 				0x12
 
-#define REQUIRED_HEADROOM_FOR_BT_HAL     16
+#define RSI_DMA_ALIGN     		8
+#define REQUIRED_HEADROOM_FOR_BT_HAL	(16 + RSI_DMA_ALIGN)
 
 #if LINUX_VERSION_CODE <= KERNEL_VERSION(3, 6, 11)
 # define get_portid(_info) (_info)->snd_pid

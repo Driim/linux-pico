@@ -36,10 +36,10 @@
 #include "rsi_hal.h"
 #include "rsi_sdio.h"
 #include "rsi_common.h"
-#if defined(CONFIG_RSI_COEX) || defined(CONFIG_RSI_BT_ALONE)
+#if defined(CONFIG_RSI_COEX_MODE) || defined(CONFIG_RSI_BT_ALONE)
 #include "rsi_hci.h"
 #endif
-#ifdef CONFIG_RSI_COEX
+#ifdef CONFIG_RSI_COEX_MODE
 #include "rsi_coex.h"
 #endif
 
@@ -78,13 +78,13 @@ int rsi_send_pkt(struct rsi_common *common, struct sk_buff *skb)
 	struct rsi_hw *adapter = common->priv;
 	int status = -EINVAL;
 
-//#ifdef CONFIG_RSI_COEX
+//#ifdef CONFIG_RSI_COEX_MODE
 	//down(&coex_cb->tx_bus_lock);
 	down(&common->tx_bus_lock);
 //#endif
 	status = adapter->host_intf_ops->write_pkt(common->priv,
 						   skb->data, skb->len);
-//#ifdef CONFIG_RSI_COEX
+//#ifdef CONFIG_RSI_COEX_MODE
 	up(&common->tx_bus_lock);
 //#endif
 	return status;
@@ -307,6 +307,7 @@ int rsi_prepare_mgmt_desc(struct rsi_common *common,struct sk_buff *skb)
 		status = -ENOSPC;
 		goto err;
 	}
+
 	vap_id = ((struct vif_priv *)vif->drv_priv)->vap_id;
 
 	desc = (__le16 *)skb->data;
@@ -1036,14 +1037,12 @@ static int auto_fw_upgrade(struct rsi_hw *adapter,
 			__func__);
 		goto fail;
 	}
-	if (adapter->device_model != RSI_DEV_9116) {
-		if ((flash_start_address + content_size) >
-					 adapter->flash_capacity) {
-			rsi_dbg(ERR_ZONE,
-				"%s: Flash Content will cross max flash size\n",
-				__func__);
-			goto fail;
-		}
+	if ((flash_start_address + content_size) >
+	     adapter->flash_capacity) {
+		rsi_dbg(ERR_ZONE,
+			"%s: Flash Content will cross max flash size\n",
+			__func__);
+		goto fail;
 	}
 
 	temp_content_size  = content_size;
@@ -1110,7 +1109,6 @@ static int rsi_load_9116_firmware(struct rsi_hw *adapter)
 	struct rsi_host_intf_ops *hif_ops = adapter->host_intf_ops;
 	int status = 0;
 	struct ta_metadata *metadata_p = NULL;
-	u8 *ta_firmware = NULL;
 	u8 *firmware_ptr;
 	u32 instructions_sz = 0;
 	const struct firmware *fw_entry = NULL;
@@ -1138,26 +1136,21 @@ static int rsi_load_9116_firmware(struct rsi_hw *adapter)
 			__func__, metadata_p->name);
 		return -EINVAL;
 	}
-	ta_firmware = kmemdup(fw_entry->data, fw_entry->size, GFP_KERNEL);
-	if (!ta_firmware) {
-		rsi_dbg(ERR_ZONE, "%s: Failed to copy firmware\n", __func__);
-		goto fail_free_fw;
-	}
-	firmware_ptr = ta_firmware;
+	firmware_ptr = (u8 *)fw_entry->data;
 	instructions_sz = fw_entry->size;
 	rsi_dbg(INFO_ZONE, "FW Length = %d bytes\n", instructions_sz);
 
 	if (!strncmp(metadata_p->name, "pmemdata", strlen("pmemdata"))) {
 		common->lmac_ver.major =
-			((ta_firmware[LMAC_VER_OFFSET_RS9116]) & 0xFF);
+			((fw_entry->data[LMAC_VER_OFFSET_RS9116]) & 0xFF);
 		common->lmac_ver.minor =
-			((ta_firmware[LMAC_VER_OFFSET_RS9116 + 1]) & 0xFF);
+			((fw_entry->data[LMAC_VER_OFFSET_RS9116 + 1]) & 0xFF);
 		common->lmac_ver.release_num =
-			((ta_firmware[LMAC_VER_OFFSET_RS9116 + 2]) & 0xFF);
+			((fw_entry->data[LMAC_VER_OFFSET_RS9116 + 2]) & 0xFF);
 		common->lmac_ver.patch_num =
-			((ta_firmware[LMAC_VER_OFFSET_RS9116 + 3]) & 0xFF);
+			((fw_entry->data[LMAC_VER_OFFSET_RS9116 + 3]) & 0xFF);
 		common->lmac_ver.ver.info.fw_ver[0] =
-			((ta_firmware[LMAC_VER_OFFSET_RS9116 + 4]) & 0xFF);
+			((fw_entry->data[LMAC_VER_OFFSET_RS9116 + 4]) & 0xFF);
 	}
 
 	if (instructions_sz % 4)
@@ -1209,7 +1202,7 @@ static int rsi_load_9116_firmware(struct rsi_hw *adapter)
 							 base_address,
 							 instructions_sz,
 							 block_size,
-							 ta_firmware);
+							 (u8 *)fw_entry->data);
 	}
 	if (status) {
 		rsi_dbg(ERR_ZONE,
@@ -1227,10 +1220,39 @@ static int rsi_load_9116_firmware(struct rsi_hw *adapter)
 	}
 
 fail_free_fw:
-	kfree(ta_firmware);
 	release_firmware(fw_entry);
 	return status;
 }
+
+/**
+ * rsi_load_9116_flash_fw() - This function load the firmware present in flash
+ * @adapter: Pointer to rsi hw
+ *
+ * Return status : 0 on success, -1 on failure
+ */
+#ifdef CONFIG_RSI_PURISM
+static int rsi_load_9116_flash_fw(struct rsi_hw *adapter)
+{
+	 struct rsi_host_intf_ops *hif_ops = adapter->host_intf_ops;
+
+	rsi_dbg(ERR_ZONE, "***** Loading Firmware from Flash *****\n");
+	if ((hif_ops->master_reg_write(adapter, MEM_ACCESS_CTRL_FROM_HOST,
+					RAM_384K_ACCESS_FROM_TA, 4)) < 0) {
+		rsi_dbg(ERR_ZONE, "%s: Unable to access full RAM memory\n",
+			__func__);
+		return -EIO;
+	}
+	if ((hif_ops->master_reg_write(adapter, SWBL_REGIN,
+					RSI_IMAGE_ONE_LOAD_FW_BL_CMD,
+					4)) < 0) {
+		rsi_dbg(ERR_ZONE, "%s: FW_LOAD_BL_CMD failed\n",
+			__func__);
+		return -EIO;
+	}
+	rsi_dbg(ERR_ZONE, "***** Loaded Firmware to RAM - Waiting for Card Ready *****\n");
+	return 0;
+}
+#endif
 
 /**
  * rsi_load_firmware () - This function loads the TA firmware for 9113
@@ -1239,6 +1261,7 @@ fail_free_fw:
  *
  * Return: status: 0 on success, -1 on failure.
  */
+
 static int rsi_load_firmware(struct rsi_hw *adapter)
 {
 	struct rsi_common *common = adapter->priv;
@@ -1246,13 +1269,24 @@ static int rsi_load_firmware(struct rsi_hw *adapter)
 	const struct firmware *fw_entry = NULL;
 	u32 regout_val = 0;
 	u16 tmp_regout_val = 0;
-	u8 *flash_content = NULL;
 	u32 content_size = 0;
 	struct ta_metadata *metadata_p;
 	int status;
-
+#ifdef CONFIG_RSI_PURISM
+	u32 flash_data_start = 0;
+#endif
 	bl_start_cmd_timer(adapter, BL_CMD_TIMEOUT);
 
+#ifdef CONFIG_RSI_PURISM
+	if ((hif_ops->master_reg_read(adapter,
+				      RSI_FLASH_READ,
+				      &flash_data_start,
+				      2)) < 0) {
+		rsi_dbg(ERR_ZONE,
+			"%s: RSI_FLASH_READ failed\n", __func__);
+		goto fail;
+	}
+#endif
 	while (!adapter->blcmd_timer_expired) {
 		if ((hif_ops->master_reg_read(adapter,
 					      SWBL_REGOUT,
@@ -1286,12 +1320,30 @@ static int rsi_load_firmware(struct rsi_hw *adapter)
 	}
 	mdelay(1);
 	if (adapter->device_model == RSI_DEV_9116) {
+#ifndef CONFIG_RSI_PURISM
 		if (adapter->rsi_host_intf == RSI_HOST_INTF_USB) {
 			if (bl_cmd(adapter, POLLING_MODE,
 				   CMD_PASS, "POLLING_MODE") < 0) {
 				goto fail;
 			}
 		}
+#else
+		if (flash_data_start == 0x5aa5) {
+			status = rsi_load_9116_flash_fw(adapter);
+			mdelay(3000);
+			if (adapter->rsi_host_intf == RSI_HOST_INTF_USB) {
+				if (bl_cmd(adapter, POLLING_MODE,
+					   CMD_PASS, "POLLING_MODE") < 0) {
+					goto fail;
+				}
+			}
+			return status;
+		} else {
+			rsi_dbg(ERR_ZONE, "%s: *** Flash is Empty ***\n",
+				__func__);
+			return -EINVAL;
+		}
+#endif
 		status = rsi_load_9116_firmware(adapter);
 		if (adapter->rsi_host_intf == RSI_HOST_INTF_USB) {
 			if (bl_cmd(adapter, JUMP_TO_ZERO_PC,
@@ -1327,27 +1379,25 @@ static int rsi_load_firmware(struct rsi_hw *adapter)
 				__func__, metadata_p->name);
 			goto fail;
 		}
-		flash_content = kmemdup(fw_entry->data, fw_entry->size, GFP_KERNEL);
-		if (!flash_content) {
-			rsi_dbg(ERR_ZONE, "%s: Failed to copy firmware\n", __func__);
-			goto fail;
-		}
 		content_size = fw_entry->size;
 		rsi_dbg(INFO_ZONE, "FW Length = %d bytes\n", content_size);
 	
 		/* Get the firmware version */
 		common->lmac_ver.ver.info.fw_ver[0] =
-			flash_content[LMAC_VER_OFFSET] & 0xFF;
+			fw_entry->data[LMAC_VER_OFFSET] & 0xFF;
 		common->lmac_ver.ver.info.fw_ver[1] =
-			flash_content[LMAC_VER_OFFSET+1] & 0xFF;
-		common->lmac_ver.major = flash_content[LMAC_VER_OFFSET + 2] & 0xFF;
+			fw_entry->data[LMAC_VER_OFFSET+1] & 0xFF;
+		common->lmac_ver.major =
+			fw_entry->data[LMAC_VER_OFFSET + 2] & 0xFF;
 		common->lmac_ver.release_num =
-			flash_content[LMAC_VER_OFFSET + 3] & 0xFF;
-		common->lmac_ver.minor = flash_content[LMAC_VER_OFFSET + 4] & 0xFF;
+			fw_entry->data[LMAC_VER_OFFSET + 3] & 0xFF;
+		common->lmac_ver.minor =
+			fw_entry->data[LMAC_VER_OFFSET + 4] & 0xFF;
 		common->lmac_ver.patch_num = 0;
 		rsi_print_version(common);
 	
-		if (bl_write_header(adapter, flash_content, content_size)) {
+		if (bl_write_header(adapter,
+				   (u8 *)fw_entry->data, content_size)) {
 			rsi_dbg(ERR_ZONE,
 				"%s: RPS Image header loading failed\n",
 				__func__);
@@ -1387,7 +1437,8 @@ fw_upgrade:
 	
 		rsi_dbg(INFO_ZONE, "Burn Command Pass.. Upgrading the firmware\n");
 	
-		if (auto_fw_upgrade(adapter, flash_content, content_size) == 0) {
+		if (auto_fw_upgrade(adapter,
+				   (u8 *)fw_entry->data, content_size) == 0) {
 			rsi_dbg(ERR_ZONE, "Firmware upgradation Done\n");
 			goto load_image_cmd;
 		}
@@ -1400,13 +1451,11 @@ fw_upgrade:
 
 success:
 	rsi_dbg(ERR_ZONE, "***** Firmware Loading successful *****\n");
-	kfree(flash_content);
 	release_firmware(fw_entry);
 	return 0;
 
 fail:
 	rsi_dbg(ERR_ZONE, "##### Firmware loading failed #####\n");
-	kfree(flash_content);
 	release_firmware(fw_entry);
 	return -EINVAL;
 }
@@ -1415,20 +1464,36 @@ int rsi_validate_oper_mode(u16 oper_mode)
 {
 	switch (oper_mode) {
 	case 1:
+#if defined(CONFIG_RSI_PURISM)
+		rsi_dbg(ERR_ZONE,
+			"Operating mode %d is not supported, "
+			"it should be either 13 or 14\n",
+			oper_mode);
+		return -EINVAL;
+#endif
 #if defined(CONFIG_RSI_BT_ALONE)
-		rsi_dbg(ERR_ZONE, "Operating mode %d not supported with"
-				  "build flag 'CONFIG_RSI_BT_ALONE enabled'\n",
-				  oper_mode);
+		rsi_dbg(ERR_ZONE,
+			"Operating mode %d not supported with"
+			"build flag 'CONFIG_RSI_BT_ALONE enabled'\n",
+			oper_mode);
 		return -EINVAL;
 #else
 		return 0;
 #endif
 	case 4:
 	case 8:
-#ifndef CONFIG_RSI_BT_ALONE
-		rsi_dbg(ERR_ZONE, "Operating mode %d not supported without"
-				  "build flag 'CONFIG_RSI_BT_ALONE enabled'\n",
-				  oper_mode);
+#if defined(CONFIG_RSI_PURISM)
+		rsi_dbg(ERR_ZONE,
+			"Operating mode %d is not supported, "
+			"it should be either 13 or 14\n",
+			oper_mode);
+		return -EINVAL;
+#endif
+#if !defined(CONFIG_RSI_BT_ALONE)
+		rsi_dbg(ERR_ZONE,
+			"Operating mode %d not supported with"
+			"build flag 'CONFIG_RSI_BT_ALONE enabled'\n",
+			oper_mode);
 		return -EINVAL;
 #else
 		return 0;
@@ -1437,11 +1502,22 @@ int rsi_validate_oper_mode(u16 oper_mode)
 	case 6:
 	case 9:
 	case 12:
+#ifdef CONFIG_RSI_PURISM
+		rsi_dbg(ERR_ZONE,
+			"Operating mode %d is not supported, "
+			"it should be either 13 or 14\n",
+			oper_mode);
+		return -EINVAL;
+#else
+		return 0;
+
+#endif
 	case 13:
 	case 14:
-#ifndef CONFIG_RSI_COEX
-		rsi_dbg(ERR_ZONE, "Operating mode %d not supported without"
-			" build flag 'CONFIG_RSI_COEX enabled'\n",
+#if !defined(CONFIG_RSI_COEX_MODE)
+		rsi_dbg(ERR_ZONE,
+			"Operating mode %d not supported without"
+			" build flag 'CONFIG_RSI_COEX_MODE enabled'\n",
 			oper_mode);
 		return -EINVAL;
 #else
@@ -1451,9 +1527,17 @@ int rsi_validate_oper_mode(u16 oper_mode)
 	case 17:
 	case 32:
 	case 48:
-#if !defined(CONFIG_RSI_COEX) || !defined(CONFIG_RSI_ZIGB)
-		rsi_dbg(ERR_ZONE, "Operating mode %d not supported without"
-			" build flags 'CONFIG_RSI_COEX and"
+#if defined(CONFIG_RSI_PURISM)
+		rsi_dbg(ERR_ZONE,
+			"Operating mode %d is not supported, "
+			"it should be either 13 or 14\n",
+			oper_mode);
+		return -EINVAL;
+#endif
+#if !defined(CONFIG_RSI_COEX_MODE) || !defined(CONFIG_RSI_ZIGB)
+		rsi_dbg(ERR_ZONE,
+			"Operating mode %d not supported without"
+			" build flags 'CONFIG_RSI_COEX_MODE and"
 			" CONFIG_RSI_ZIGB are enabled'\n",
 			oper_mode);
 		return -EINVAL;
@@ -1518,7 +1602,7 @@ EXPORT_SYMBOL_GPL(rsi_opermode_instances);
 int rsi_hal_device_init(struct rsi_hw *adapter)
 {
 	struct rsi_common *common = adapter->priv;
-#if defined (CONFIG_RSI_COEX) || defined(CONFIG_RSI_BT_ALONE) || defined(CONFIG_RSI_ZIGB)
+#if defined (CONFIG_RSI_COEX_MODE) || defined(CONFIG_RSI_BT_ALONE) || defined(CONFIG_RSI_ZIGB)
 	switch (common->oper_mode) {
 	case DEV_OPMODE_STA_BT_DUAL:
 	case DEV_OPMODE_STA_BT:
@@ -1549,7 +1633,7 @@ int rsi_hal_device_init(struct rsi_hw *adapter)
 		common->zb_fsm_state = ZB_DEVICE_NOT_READY;
 		break;
 	default:
-#ifndef CONFIG_CARACALLA_BOARD
+#if !defined(CONFIG_CARACALLA_BOARD) || !defined(CONFIG_RSI_PURISM)
 		common->oper_mode = 1;
 		common->coex_mode = 1;
 #else
@@ -1581,7 +1665,12 @@ int rsi_hal_device_init(struct rsi_hw *adapter)
 	adapter->common_hal_fsm = COMMAN_HAL_WAIT_FOR_CARD_READY;
 	common->fsm_state = FSM_CARD_NOT_READY;
 
-#if defined(CONFIG_RSI_BT_ALONE) || defined(CONFIG_RSI_COEX)
+#ifdef CONFIG_RSI_PURISM
+	if(adapter->device_model == RSI_DEV_9116)
+		memcpy(common->driver_ver, DRV_VER, ARRAY_SIZE(DRV_VER));
+#endif
+
+#if defined(CONFIG_RSI_BT_ALONE) || defined(CONFIG_RSI_COEX_MODE)
 	adapter->priv->bt_fsm_state = BT_DEVICE_NOT_READY;
 #endif
 

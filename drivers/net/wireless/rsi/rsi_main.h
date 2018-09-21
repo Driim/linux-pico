@@ -41,7 +41,7 @@ struct rsi_hw;
 
 #include "rsi_ps.h"
 
-#define DRV_VER				"RS9113.NBZ.NL.GNU.LNX.1.4.RC3"
+#define DRV_VER				"RS9116.NB0.NL.PURISM.LNX.1.1"
 
 #define ERR_ZONE                        BIT(0) /* Error Msgs		*/
 #define INFO_ZONE                       BIT(1) /* Generic Debug Msgs	*/
@@ -434,11 +434,11 @@ struct rsi_common {
 	u8 wow_flags;
 #endif
 
-#if defined (CONFIG_RSI_BT_ALONE) || defined(CONFIG_RSI_COEX)
+#if defined (CONFIG_RSI_BT_ALONE) || defined(CONFIG_RSI_COEX_MODE)
 	void *hci_adapter;
 #endif
 
-#ifdef CONFIG_RSI_COEX
+#ifdef CONFIG_RSI_COEX_MODE
 	void *coex_cb;
 #endif
 
@@ -630,7 +630,7 @@ struct rsi_mod_ops {
 	int (*recv_pkt)(void *priv, u8 *msg);
 };
 
-#if defined(CONFIG_RSI_COEX) && defined(CONFIG_RSI_ZIGB)
+#if defined(CONFIG_RSI_COEX_MODE) && defined(CONFIG_RSI_ZIGB)
 struct rsi_mod_ops *rsi_get_zb_ops(void);
 #endif
 #endif

@@ -31,7 +31,7 @@
 #include "rsi_mgmt.h"
 #include "rsi_common.h"
 #include "rsi_hal.h"
-#ifdef CONFIG_RSI_COEX
+#ifdef CONFIG_RSI_COEX_MODE
 #include "rsi_coex.h"
 #endif
 
@@ -331,7 +331,7 @@ void rsi_core_qos_processor(struct rsi_common *common)
 			adapter->peer_notify = false;
 			rsi_dbg(INFO_ZONE, "%s RESET PEER_NOTIFY\n", __func__);
 		}
-#ifdef CONFIG_RSI_COEX
+#ifdef CONFIG_RSI_COEX_MODE
 		if (q_num == MGMT_BEACON_Q) {
 			status = rsi_send_pkt(common, skb);
 			dev_kfree_skb(skb);

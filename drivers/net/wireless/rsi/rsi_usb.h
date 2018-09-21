@@ -50,7 +50,7 @@
 #define RSI_USB_TX_HEAD_ROOM         128
 
 #define MAX_TX_URBS                  1
-#if defined (CONFIG_RSI_BT_ALONE) || defined(CONFIG_RSI_COEX)
+#if defined (CONFIG_RSI_BT_ALONE) || defined(CONFIG_RSI_COEX_MODE)
 #define MAX_RX_URBS                  2
 #else
 #define MAX_RX_URBS                  1

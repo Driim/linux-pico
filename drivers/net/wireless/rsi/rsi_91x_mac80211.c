@@ -413,6 +413,7 @@ static int rsi_mac80211_hw_scan_start(struct ieee80211_hw *hw,
 	if (common->bgscan_en || common->scan_in_prog)
 		return -EBUSY;
 
+	cancel_work_sync(&common->scan_work);
 	mutex_lock(&common->mutex);
 
 	if (!bss->assoc) {
@@ -473,7 +474,6 @@ void rsi_mac80211_hw_scan_cancel(struct ieee80211_hw *hw,
 		rsi_wait_event(&common->cancel_hw_scan_event,
 			       EVENT_WAIT_FOREVER);
 		rsi_reset_event(&common->cancel_hw_scan_event);
-		cancel_work_sync(&common->scan_work);
 		common->scan_request = NULL;
 	}
 	
@@ -605,10 +605,11 @@ static void rsi_mac80211_tx(struct ieee80211_hw *hw,
 
 	if ((memcmp(common->mac_addr, wlh->addr2, ETH_ALEN))) {
 		rsi_dbg(ERR_ZONE,
-				"%s: MAC ID not found and dropping this packets\n", __func__);
+			"%s: MAC ID is not found and dropping this packets\n", __func__);
 		ieee80211_free_txskb(common->priv->hw, skb);
 		return;
 	}
+
 #ifdef CONFIG_RSI_WOW
 	if (common->wow_flags & RSI_WOW_ENABLED) {
 		ieee80211_free_txskb(common->priv->hw, skb);
@@ -633,7 +634,7 @@ static void rsi_mac80211_tx(struct ieee80211_hw *hw,
 		return;
 	}
 
-#if defined(CONFIG_RSI_BT_ALONE) && !defined(CONFIG_RSI_COEX)
+#if defined(CONFIG_RSI_BT_ALONE) && !defined(CONFIG_RSI_COEX_MODE)
         ieee80211_free_txskb(common->priv->hw, skb); 
 #else
 	rsi_core_xmit(common, skb);
@@ -681,6 +682,9 @@ static void rsi_mac80211_stop(struct ieee80211_hw *hw)
 	
 	rsi_dbg(ERR_ZONE, "===> Interface DOWN <===\n");
 
+#ifdef CONFIG_HW_SCAN_OFFLOAD
+	cancel_work_sync(&common->scan_work);
+#endif
 	mutex_lock(&common->mutex);
 	
 	common->iface_down = true;
@@ -1658,12 +1662,14 @@ static int rsi_mac80211_ampdu_action(struct ieee80211_hw *hw,
 
 	mutex_lock(&common->mutex);
 
-#if ((LINUX_VERSION_CODE < KERNEL_VERSION(4, 6, 0)) && \
-	!(defined(CONFIG_CARACALLA_BOARD)))
+#if (((LINUX_VERSION_CODE >= KERNEL_VERSION(4, 4, 69)) && \
+      (LINUX_VERSION_CODE < KERNEL_VERSION(4, 5, 0))) || \
+     (LINUX_VERSION_CODE >= KERNEL_VERSION(4, 6, 0)) || \
+     (defined(CONFIG_CARACALLA_BOARD)))
+	seq_no = params->ssn;
+#else
 	if (ssn != NULL)
 		seq_no = *ssn;
-#else
-	seq_no = params->ssn;
 #endif
 	if ((vif->type == NL80211_IFTYPE_AP) ||
 	    (vif->type == NL80211_IFTYPE_P2P_GO)) {
@@ -2454,12 +2460,15 @@ static void rsi_reg_notify(struct wiphy *wiphy,
 		__func__, regdfs_region_str(region_code));
 #endif
 
-#ifdef CONFIG_CARACALLA_BOARD
 	sband = wiphy->bands[NL80211_BAND_2GHZ];
 	for (i = 0; i < sband->n_channels; i++) {
 		ch = &sband->channels[i];
 
+#ifdef CONFIG_CARACALLA_BOARD
 		if ((region_code == NL80211_DFS_FCC) &&
+#else
+		if ((region_code == NL80211_DFS_UNSET) &&
+#endif
 		    (ch->hw_value == 12 || ch->hw_value == 13)) {
 			if (ch->flags & IEEE80211_CHAN_DISABLED)
 				ch->flags &= ~IEEE80211_CHAN_DISABLED;
@@ -2470,9 +2479,10 @@ static void rsi_reg_notify(struct wiphy *wiphy,
 		    (ch->flags & IEEE80211_CHAN_NO_IR))
 			continue;
 		
+#ifdef CONFIG_CARACALLA_BOARD
 		rsi_apply_carcalla_power_values(adapter, vif, ch);
-	}
 #endif
+	}
 
 	if (common->num_supp_bands > 1) {
 		sband = wiphy->bands[NL80211_BAND_5GHZ];
@@ -2521,14 +2531,10 @@ static void rsi_mac80211_rfkill_poll(struct ieee80211_hw *hw)
 	struct rsi_hw *adapter = hw->priv;
 	struct rsi_common *common = adapter->priv;
 	
-	mutex_lock(&common->mutex);
-
 	if (common->fsm_state != FSM_MAC_INIT_DONE)
 		wiphy_rfkill_set_hw_state(hw->wiphy, true);
 	else
 		wiphy_rfkill_set_hw_state(hw->wiphy, false);
-
-	mutex_unlock(&common->mutex);
 }
 
 #ifdef CONFIG_RSI_WOW
@@ -2991,18 +2997,12 @@ int rsi_mac80211_attach(struct rsi_common *common)
 	SET_IEEE80211_PERM_ADDR(hw, common->mac_addr);
 	ether_addr_copy(hw->wiphy->addr_mask, addr_mask);
 
-	if (common->coex_mode == 4) {
-		  wiphy->interface_modes = BIT(NL80211_IFTYPE_STATION) |
-			  		   BIT(NL80211_IFTYPE_AP);
-	} else if (common->coex_mode == 2) {
-		  wiphy->interface_modes = BIT(NL80211_IFTYPE_STATION);
-	} else {
-		  wiphy->interface_modes = BIT(NL80211_IFTYPE_STATION) |
-			  		   BIT(NL80211_IFTYPE_AP) |
-					   BIT(NL80211_IFTYPE_P2P_DEVICE) |
-					   BIT(NL80211_IFTYPE_P2P_CLIENT) |
-					   BIT(NL80211_IFTYPE_P2P_GO);
-	}
+	wiphy->interface_modes = BIT(NL80211_IFTYPE_STATION) |
+				 BIT(NL80211_IFTYPE_AP) |
+				 BIT(NL80211_IFTYPE_P2P_DEVICE) |
+				 BIT(NL80211_IFTYPE_P2P_CLIENT) |
+				 BIT(NL80211_IFTYPE_P2P_GO);
+
 	wiphy->signal_type = CFG80211_SIGNAL_TYPE_MBM;
 	wiphy->retry_short = RETRY_SHORT;
 	wiphy->retry_long  = RETRY_LONG;

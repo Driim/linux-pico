@@ -33,7 +33,7 @@
 #include "rsi_common.h"
 #include "rsi_ps.h"
 #include "rsi_hal.h"
-#ifdef CONFIG_RSI_COEX
+#ifdef CONFIG_RSI_COEX_MODE
 #include "rsi_coex.h"
 #endif
 #ifdef CONFIG_RSI_11K
@@ -1588,18 +1588,18 @@ int rsi_band_check(struct rsi_common *common,
 			common->endpoint = EP_5GHZ_20MHZ;
 	}
 
+	if (common->endpoint != prev_ep) {
+		status = rsi_program_bb_rf(common);
+		if (status)
+			return status;
+	}
+
 	if (common->channel_width != prev_bw) {
 		status = rsi_load_bootup_params(common);
 		if (status)
 			return status;
 
 		status = rsi_load_radio_caps(common);
-		if (status)
-			return status;
-	}
-
-	if (common->endpoint != prev_ep) {
-		status = rsi_program_bb_rf(common);
 		if (status)
 			return status;
 	}
@@ -3427,7 +3427,7 @@ static int rsi_handle_ta_confirm(struct rsi_common *common, u8 *msg)
 
 			if (adapter->idx < MAX_NUM_CHANS) {
 				id = adapter->idx;
-#if (LINUX_VERSION_CODE > KERNEL_VERSION(4, 0, 0))
+#if (LINUX_VERSION_CODE >= KERNEL_VERSION(4, 0, 0))
 				adapter->rsi_survey[id].time_busy =
 				    acs_data->chan_busy_time;
 				adapter->rsi_survey[id].time = ACS_TIMEOUT_TIME;
@@ -3513,10 +3513,16 @@ int rsi_handle_card_ready(struct rsi_common *common, u8 *msg)
 		rsi_dbg(INIT_ZONE, "Card ready indication from WLAN HAL\n");
 
 		if (common->priv->device_model == RSI_DEV_9116) {
-			memcpy(common->mac_addr, rsi_standard_mac,
-			       RSI_MAC_SUB_LEN);
-			get_random_bytes(&common->mac_addr[3],
-					 RSI_MAC_SUB_LEN);
+			if ((msg[16] != MAGIC_WORD) ||
+			    ((msg[16] == MAGIC_WORD) && (msg[21] == 0x00))) {
+				memcpy(common->mac_addr, rsi_standard_mac,
+				       RSI_MAC_SUB_LEN);
+				get_random_bytes(&common->mac_addr[3],
+						 RSI_MAC_SUB_LEN);
+			} else {
+				memcpy(common->mac_addr, &msg[20],
+				       ETH_ALEN);
+			}
 			rsi_hex_dump(INIT_ZONE, "MAC Addr",
 				     common->mac_addr, ETH_ALEN);
 		}

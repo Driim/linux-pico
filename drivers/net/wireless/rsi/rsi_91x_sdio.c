@@ -1050,8 +1050,8 @@ static int rsi_sdio_ta_reset_ops(struct rsi_hw *adapter)
 		rsi_dbg(ERR_ZONE, "Unable to hold TA threads\n");
 		goto err;
 	}
-	data = TA_SOFT_RST_CLR;
 	/* Bringing TA out of reset */
+	put_unaligned_le32(TA_SOFT_RST_CLR, data);
 	if (rsi_sdio_write_register_multiple(adapter,
 					     TA_SOFT_RESET_REG |
 					     SD_REQUEST_MASTER,
@@ -1065,8 +1065,8 @@ static int rsi_sdio_ta_reset_ops(struct rsi_hw *adapter)
 	 * in any chip or any project, then wait till TA goes to
 	 * hold by polling poll_status register.
 	 **/
-	data = TA_PC_ZERO;
 	/* Bringing TA out of reset */
+	put_unaligned_le32(TA_PC_ZERO, data);
 	if (rsi_sdio_write_register_multiple(adapter,
 					     TA_TH0_PC_REG |
 					     SD_REQUEST_MASTER,
@@ -1359,7 +1359,7 @@ static void rsi_disconnect(struct sdio_func *pfunction)
 
 	rsi_mac80211_detach(adapter);
 
-#if defined(CONFIG_RSI_BT_ALONE) || defined(CONFIG_RSI_COEX)
+#if defined(CONFIG_RSI_BT_ALONE) || defined(CONFIG_RSI_COEX_MODE)
 	if ((adapter->priv->coex_mode == 2) ||
 	    (adapter->priv->coex_mode == 4))
 		rsi_hci_detach(adapter->priv);
@@ -1574,7 +1574,7 @@ static int rsi_freeze(struct device *dev)
 		rsi_dbg(ERR_ZONE,
 			"##### Device can not wake up through WLAN\n");
 #endif
-#if defined(CONFIG_RSI_BT_ALONE) || defined(CONFIG_RSI_COEX)
+#if defined(CONFIG_RSI_BT_ALONE) || defined(CONFIG_RSI_COEX_MODE)
 	rsi_hci_detach(common);
 #endif
 
@@ -1636,7 +1636,7 @@ static void rsi_shutdown(struct device *dev)
 		rsi_dbg(ERR_ZONE, "Failed to configure WoWLAN\n");
 #endif
 
-#if defined(CONFIG_RSI_BT_ALONE) || defined(CONFIG_RSI_COEX)
+#if defined(CONFIG_RSI_BT_ALONE) || defined(CONFIG_RSI_COEX_MODE)
 	rsi_hci_detach(adapter->priv);
 #endif
 

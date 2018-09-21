@@ -50,7 +50,7 @@ config RSI_BT_ALONE
 	  This option enables the BT classic alone upport in rsi drivers.
 	  Say Y, if you want to use this feature.
 
-config RSI_COEX
+config RSI_COEX_MODE
 	bool "Redpine Signals Wi-Fi BT Coex support"
 	depends on RSI_91X
 	default n
@@ -92,10 +92,18 @@ config CARACALLA_BOARD
 
 config RSI_ZIGB 
 	bool "Redpine device support on Zigbee"
-	depends on RSI_91X && RSI_COEX
+	depends on RSI_91X && RSI_COEX_MODE
 	default n
 	---help---
 	  This option is used to support Zigbee with RSI driver.
 	  Select Y, if you have to use this support.
+
+config RSI_PURISM
+	bool "Redpine Signals PURISM FW support"
+	depends on RSI_91X && RSI_COEX_MODE
+	default n
+	---help---
+	  This option enables the PURISM FW support.
+	  Say Y if you want to use this feature.
 
 endif # WLAN_VENDOR_RSI

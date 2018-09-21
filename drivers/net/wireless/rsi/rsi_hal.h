@@ -70,6 +70,11 @@
 #define PING_BUFFER_ADDRESS		0x19000
 #define PONG_BUFFER_ADDRESS		0x1a000
 
+#ifdef CONFIG_RSI_PURISM
+#define RSI_IMAGE_ONE_LOAD_FW_BL_CMD    0xAB31
+#define RSI_FLASH_READ                  (0x04000000 + 0x80000 + 0x40)
+#endif
+
 #define SWBL_REGIN			0x41050034
 #define SWBL_REGOUT			0x4105003c
 #define PING_WRITE			0x1

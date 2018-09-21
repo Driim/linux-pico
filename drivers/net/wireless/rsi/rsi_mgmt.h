@@ -217,7 +217,7 @@ enum rx_cmd_type {
 #define ALLOW_CONN_PEER_MGMT_WHILE_BUF_FULL BIT(5)
 #define DISALLOW_BROADCAST_DATA		BIT(6)
 
-#define RSI_TXPOWER_MAX			30
+#define RSI_TXPOWER_MAX			20
 #define RSI_TXPOWER_MIN			-127
 
 #define DEEP_SLEEP			1
@@ -226,7 +226,6 @@ enum rx_cmd_type {
 #define SLEEP_REQUEST			1
 #define WAKEUP_REQUEST			2
 
-#define RSI_TXPOWER_MAX			30
 #define RSI_TXPOWER_MIN			-127
 
 #define IEEE80211_MARKALL_UAPSD_QUEUES \

@@ -163,28 +163,33 @@ static int rsi_hci_send_pkt(struct hci_dev *hdev, struct sk_buff *skb)
 	}
 
 	if (skb_headroom(skb) < REQUIRED_HEADROOM_FOR_BT_HAL) {
-               /* Re-allocate one more skb with sufficent headroom 
+		/* Re-allocate one more skb with sufficent headroom 
 		 * make copy of input-skb to new one */
-		u16 new_len = skb->len + REQUIRED_HEADROOM_FOR_BT_HAL;
-
-		new_skb = dev_alloc_skb(new_len);
-		if (!new_skb) {
-			rsi_dbg(ERR_ZONE, "%s: Failed to alloc skb\n",
-				__func__);
-			dev_kfree_skb(skb);
+		new_skb = skb_realloc_headroom(skb, REQUIRED_HEADROOM_FOR_BT_HAL);
+		if(unlikely(!new_skb))
 			return -ENOMEM;
+#if LINUX_VERSION_CODE >= KERNEL_VERSION (4, 5, 0)
+		bt_cb(new_skb)->pkt_type = hci_skb_pkt_type(skb);
+#else
+		bt_cb(new_skb)->pkt_type = bt_cb((skb))->pkt_type;
+#endif
+		kfree_skb(skb);
+		skb = new_skb;
+		if (!IS_ALIGNED((unsigned long)skb->data, RSI_DMA_ALIGN)) {
+			u8 *skb_data = skb->data;
+			int skb_len = skb->len;
+
+			skb_push(skb, RSI_DMA_ALIGN);
+			skb_pull(skb, PTR_ALIGN(skb->data,
+				 RSI_DMA_ALIGN) - skb->data);
+			memmove(skb->data, skb_data, skb_len);
+			skb_trim(skb, skb_len);
 		}
-		skb_reserve(new_skb, REQUIRED_HEADROOM_FOR_BT_HAL);
-                skb_put(new_skb, skb->len);
-		memcpy(new_skb->data, skb->data, skb->len);
-		bt_cb(new_skb)->pkt_type = bt_cb(skb)->pkt_type;
-                dev_kfree_skb(skb);
-                skb = new_skb;
 	}
 
         rsi_hex_dump(DATA_RX_ZONE, "TX BT Pkt", skb->data, skb->len); 
 
-#ifdef CONFIG_RSI_COEX
+#ifdef CONFIG_RSI_COEX_MODE
 	rsi_coex_send_pkt(h_adapter->priv, skb, BT_Q);
 #else
         rsi_send_bt_pkt(h_adapter->priv, skb);

@@ -344,8 +344,10 @@ static void rsi_rx_done_handler(struct urb *urb)
 	struct rx_usb_ctrl_block *rx_cb = urb->context;
 	struct rsi_91x_usbdev *dev = (struct rsi_91x_usbdev *)rx_cb->data;
 
-	if (urb->status)
+	if (urb->status) {
+		dev_kfree_skb(rx_cb->rx_skb);
 		return;
+	}
 
 	if (urb->actual_length <= 0 || urb->actual_length > rx_cb->rx_skb->len) {
 		rsi_dbg(INFO_ZONE, "%s: Invalid packet length = %d\n", __func__, urb->actual_length);
@@ -566,7 +568,7 @@ static void rsi_deinit_usb_interface(struct rsi_hw *adapter)
 	//kfree(dev->rx_cb[0].rx_buffer);
 	skb_queue_purge(&dev->rx_q[0]);
 	usb_free_urb(dev->rx_cb[0].rx_urb);
-#if defined (CONFIG_RSI_BT_ALONE) || defined(CONFIG_RSI_COEX)	
+#if defined (CONFIG_RSI_BT_ALONE) || defined(CONFIG_RSI_COEX_MODE)	
 	//kfree(dev->rx_cb[1].rx_buffer);
 	skb_queue_purge(&dev->rx_q[1]);
 	usb_free_urb(dev->rx_cb[1].rx_urb);
@@ -966,7 +968,7 @@ static int rsi_probe(struct usb_interface *pfunction,
 	if (status)
 		goto err1;
 
-#if defined(CONFIG_RSI_BT_ALONE) || defined(CONFIG_RSI_COEX)
+#if defined(CONFIG_RSI_BT_ALONE) || defined(CONFIG_RSI_COEX_MODE)
 	status = rsi_rx_urb_submit(adapter, 2 /* RX_BT_EP */);
 	if (status)
 		goto err1;
@@ -998,7 +1000,7 @@ static void rsi_disconnect(struct usb_interface *pfunction)
 	rsi_mac80211_detach(adapter);
 	rsi_dbg(INFO_ZONE, "mac80211 detach done\n");
 
-#if defined(CONFIG_RSI_BT_ALONE) || defined(CONFIG_RSI_COEX)
+#if defined(CONFIG_RSI_BT_ALONE) || defined(CONFIG_RSI_COEX_MODE)
 	if ((adapter->priv->coex_mode == 2) ||
 	    (adapter->priv->coex_mode == 4))
 		rsi_hci_detach(adapter->priv);

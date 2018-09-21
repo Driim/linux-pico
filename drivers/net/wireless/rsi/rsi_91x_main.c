@@ -35,22 +35,22 @@
 #include "rsi_mgmt.h"
 #include "rsi_common.h"
 #include "rsi_hal.h"
-#if defined(CONFIG_RSI_BT_ALONE) || defined(CONFIG_RSI_COEX)
+#if defined(CONFIG_RSI_BT_ALONE) || defined(CONFIG_RSI_COEX_MODE)
 #include "rsi_hci.h"
 #endif
-#ifdef CONFIG_RSI_COEX
+#ifdef CONFIG_RSI_COEX_MODE
 #include "rsi_coex.h"
 #endif
 
-u16 rsi_zone_enabled =	ERR_ZONE |
-			//INIT_ZONE |
-			//MGMT_TX_ZONE |
-			//MGMT_RX_ZONE |
-			//DATA_TX_ZONE |
-			//DATA_RX_ZONE |
-			//FSM_ZONE |
-			//ISR_ZONE |
-			//INFO_ZONE |
+u16 rsi_zone_enabled =	/* INFO_ZONE |
+			INIT_ZONE |
+			MGMT_TX_ZONE |
+			MGMT_RX_ZONE |
+			DATA_TX_ZONE |
+			DATA_RX_ZONE |
+			FSM_ZONE |
+			ISR_ZONE | */
+			ERR_ZONE |
 			0;
 module_param(rsi_zone_enabled, ushort, S_IRUGO);
 MODULE_PARM_DESC(rsi_zone_enabled,
@@ -66,8 +66,8 @@ MODULE_PARM_DESC(rsi_zone_enabled,
 
 /* Default operating mode is Wi-Fi alone */
 int dev_oper_mode_count;
-#ifdef CONFIG_CARACALLA_BOARD
-#if defined (CONFIG_RSI_COEX) || defined(CONFIG_RSI_BT_ALONE)
+#if defined(CONFIG_CARACALLA_BOARD) || defined(CONFIG_RSI_PURISM)
+#if defined (CONFIG_RSI_COEX_MODE) || defined(CONFIG_RSI_BT_ALONE)
 u16 dev_oper_mode = DEV_OPMODE_STA_BT_DUAL;
 #else
 u16 dev_oper_mode = DEV_OPMODE_WIFI_ALONE;
@@ -90,6 +90,7 @@ MODULE_PARM_DESC(dev_oper_mode,
 		 "1 -	Wi-Fi Alone \
 		  4 -	BT Alone \
 		  8 -	BT LE Alone \
+		  12 -	BT classic + BT LE \
 		  5 -	Wi-Fi STA + BT classic \
 		  9 -	Wi-Fi STA + BT LE \
 		  13 -	Wi-Fi STA + BT classic + BT LE \
@@ -100,7 +101,7 @@ MODULE_PARM_DESC(dev_oper_mode,
 		  32 -	ZIGB COORDINATOR  \
 		  48 -	ZIGB ROUTER");
 
-#if defined(CONFIG_RSI_COEX) && defined(CONFIG_RSI_ZIGB)
+#if defined(CONFIG_RSI_COEX_MODE) && defined(CONFIG_RSI_ZIGB)
 static struct rsi_proto_ops g_proto_ops = {
 	.coex_send_pkt = rsi_coex_send_pkt,
 	.get_host_intf = rsi_get_host_intf,
@@ -183,9 +184,9 @@ static char *opmode_str(int oper_mode)
 	case DEV_OPMODE_STA_ZB:
 	       return "Wi-Fi STA + ZIGB STA";
 	case DEV_OPMODE_ZB_COORDINATOR:
-	       return "Wi-Fi STA + ZIGB Coordinator";
+	       return "ZIGB Coordinator";
 	case DEV_OPMODE_ZB_ROUTER:
-	       return "Wi-Fi STA + ZIBG Router";
+	       return "ZIBG Router";
 	}
 	return "Unknown";
 }
@@ -267,7 +268,7 @@ int rsi_read_pkt(struct rsi_common *common, u8 *rx_pkt, s32 rcv_pkt_len)
 	u32 index = 0, length = 0, queueno = 0;
 	u16 actual_length = 0, offset;
 	struct sk_buff *skb = NULL;
-#if defined(CONFIG_RSI_COEX) && defined(CONFIG_RSI_ZIGB)
+#if defined(CONFIG_RSI_COEX_MODE) && defined(CONFIG_RSI_ZIGB)
 	struct rsi_mod_ops *zb_ops = g_proto_ops.zb_ops;
 	u8 zb_pkt_type;
 #endif
@@ -299,7 +300,7 @@ int rsi_read_pkt(struct rsi_common *common, u8 *rx_pkt, s32 rcv_pkt_len)
 				     "RX Command co ex packet",
 				     frame_desc + offset,
 				     FRAME_DESC_SZ + length);
-#ifdef CONFIG_RSI_COEX
+#ifdef CONFIG_RSI_COEX_MODE
 			rsi_coex_recv_pkt(common, (frame_desc + offset));
 #else
 			rsi_mgmt_pkt_recv(common, (frame_desc + offset));
@@ -323,7 +324,7 @@ int rsi_read_pkt(struct rsi_common *common, u8 *rx_pkt, s32 rcv_pkt_len)
 		case RSI_WIFI_MGMT_Q:
 			rsi_mgmt_pkt_recv(common, (frame_desc + offset));
 			break;
-#if defined(CONFIG_RSI_BT_ALONE) || defined(CONFIG_RSI_COEX)
+#if defined(CONFIG_RSI_BT_ALONE) || defined(CONFIG_RSI_COEX_MODE)
 		case RSI_BT_MGMT_Q:
 		case RSI_BT_DATA_Q:
 			rsi_hex_dump(DATA_RX_ZONE,
@@ -334,7 +335,7 @@ int rsi_read_pkt(struct rsi_common *common, u8 *rx_pkt, s32 rcv_pkt_len)
 			break;
 #endif
 
-#if defined(CONFIG_RSI_COEX) && defined(CONFIG_RSI_ZIGB)
+#if defined(CONFIG_RSI_COEX_MODE) && defined(CONFIG_RSI_ZIGB)
 		case RSI_ZIGB_Q:
 			rsi_hex_dump(DATA_RX_ZONE,
 					"RX ZB Pkt",
@@ -435,7 +436,7 @@ void init_sdio_intr_status_poll_thread(struct rsi_common *common)
 EXPORT_SYMBOL_GPL(init_sdio_intr_status_poll_thread);
 #endif
 
-#ifdef CONFIG_RSI_COEX
+#ifdef CONFIG_RSI_COEX_MODE
 enum host_intf rsi_get_host_intf(void *priv)
 {
 	struct rsi_common *common = (struct rsi_common *)priv;
@@ -520,7 +521,7 @@ struct rsi_hw *rsi_91x_init(void)
 		goto err;
 	}
 
-#ifdef CONFIG_RSI_COEX
+#ifdef CONFIG_RSI_COEX_MODE
 	if (rsi_coex_init(common)) {
 		rsi_dbg(ERR_ZONE, "Failed to init COEX module\n");
 		goto err;
@@ -577,7 +578,7 @@ void rsi_91x_deinit(struct rsi_hw *adapter)
 	for (ii = 0; ii < NUM_SOFT_QUEUES; ii++)
 		skb_queue_purge(&common->tx_queue[ii]);
 
-#ifdef CONFIG_RSI_COEX
+#ifdef CONFIG_RSI_COEX_MODE
 	if (common->coex_mode > 1) {
 #ifdef CONFIG_RSI_ZIGB
 		if ((common->zb_fsm_state == ZB_DEVICE_READY) &&
@@ -614,7 +615,7 @@ EXPORT_SYMBOL_GPL(rsi_91x_deinit);
 static int rsi_91x_hal_module_init(void)
 {
 	rsi_dbg(INIT_ZONE, "%s: Module init called\n", __func__);
-#if defined(CONFIG_RSI_COEX) && defined(CONFIG_RSI_ZIGB)
+#if defined(CONFIG_RSI_COEX_MODE) && defined(CONFIG_RSI_ZIGB)
 	g_proto_ops.zb_ops = rsi_get_zb_ops();
 	if (!g_proto_ops.zb_ops)
 		rsi_dbg(ERR_ZONE, "Failed to get ZIGB ops\n");
