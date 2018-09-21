@@ -604,7 +604,6 @@ void dcss_dpr_tile_derive(struct dcss_soc *dcss,
 			ch->tile = TILE_GPU_STANDARD;
 			break;
 		case DRM_FORMAT_MOD_VIVANTE_SUPER_TILED:
-		case DRM_FORMAT_MOD_VIVANTE_SUPER_TILED_FC:
 			dcss_dpr_tile_set(dcss, ch_num, TILE_GPU_SUPER);
 			ch->tile = TILE_GPU_SUPER;
 			break;

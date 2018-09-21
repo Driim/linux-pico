@@ -67,7 +67,6 @@ static const u64 dcss_video_format_modifiers[] = {
 static const u64 dcss_graphics_format_modifiers[] = {
 	DRM_FORMAT_MOD_VIVANTE_TILED,
 	DRM_FORMAT_MOD_VIVANTE_SUPER_TILED,
-	DRM_FORMAT_MOD_VIVANTE_SUPER_TILED_FC,
 	DRM_FORMAT_MOD_LINEAR,
 	DRM_FORMAT_MOD_INVALID,
 };
@@ -138,8 +137,7 @@ static bool dcss_plane_format_mod_supported(struct drm_plane *plane,
 		case DRM_FORMAT_ARGB2101010:
 			return modifier == DRM_FORMAT_MOD_LINEAR ||
 			       modifier == DRM_FORMAT_MOD_VIVANTE_TILED ||
-			       modifier == DRM_FORMAT_MOD_VIVANTE_SUPER_TILED ||
-			       modifier == DRM_FORMAT_MOD_VIVANTE_SUPER_TILED_FC;
+			       modifier == DRM_FORMAT_MOD_VIVANTE_SUPER_TILED;
 		default:
 			return modifier == DRM_FORMAT_MOD_LINEAR;
 		}
@@ -286,11 +284,6 @@ static void dcss_plane_atomic_set_base(struct dcss_plane *dcss_plane)
 			/* Bypass dec400d */
 			dcss_dec400d_bypass(dcss_plane->dcss);
 			return;
-		case DRM_FORMAT_MOD_VIVANTE_SUPER_TILED_FC:
-			caddr = cma_obj->paddr + ALIGN(fb->height, 64) * fb->pitches[0];
-			dcss_dec400d_read_config(dcss_plane->dcss, 0, true);
-			dcss_dec400d_addr_set(dcss_plane->dcss, p1_ba, caddr);
-			break;
 		default:
 			WARN_ON(1);
 			return;
