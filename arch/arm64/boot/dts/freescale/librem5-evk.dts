@@ -182,14 +182,43 @@
 	pinctrl-0 = <&pinctrl_csiclk>;
 
 	imx8m-som {
+		pinctrl_nc: ncgrp {
+			fsl,pins = <
+				MX8MQ_IOMUXC_SAI1_MCLK_SAI1_MCLK 		0x00
+				MX8MQ_IOMUXC_I2C4_SCL_I2C4_SCL			0x4000007f
+				MX8MQ_IOMUXC_I2C4_SDA_I2C4_SDA			0x4000007f
+			>;
+		};
+
+		pinctrl_up: upgrp {
+			fsl,pins = <
+				MX8MQ_IOMUXC_SAI1_TXD2_SAI1_TX_DATA2 		0x00
+			>;
+		};
+
 		pinctrl_csi1: csi1grp {
 			fsl,pins = <
 				MX8MQ_IOMUXC_GPIO1_IO07_GPIO1_IO7		0x19
 			>;
 		};
-		pinctrl_csi2: csi2grp {
+
+		pinctrl_touch: touch_nrst {
 			fsl,pins = <
 				MX8MQ_IOMUXC_GPIO1_IO05_GPIO1_IO5		0x19
+			>;
+		};
+
+		pintctl_wifi: wifigrp {
+			fsl,pins = <
+				MX8MQ_IOMUXC_SAI2_MCLK_GPIO4_IO27	0x16 	/* WIFI_WAKE */
+			>;
+		};
+		
+		pinctrl_wwan: wwan_grp {
+			fsl,pins = <
+				MX8MQ_IOMUXC_NAND_CE3_B_GPIO3_IO4	0x49	/* nWWAN_DISABLE */
+				MX8MQ_IOMUXC_NAND_DATA02_GPIO3_IO8	0x16	/* nWoWWAN */
+				MX8MQ_IOMUXC_NAND_DATA03_GPIO3_IO9	0x19	/* WWAN_RESET */
 			>;
 		};
 
@@ -248,14 +277,6 @@
 				MX8MQ_IOMUXC_NAND_DATA03_GPIO3_IO9		0x16	/* TOUCH RST */
 			>;
 		};
-
-		pinctrl_i2c4: i2c4grp {
-			fsl,pins = <
-				MX8MQ_IOMUXC_I2C4_SCL_I2C4_SCL			0x4000007f
-				MX8MQ_IOMUXC_I2C4_SDA_I2C4_SDA			0x4000007f
-			>;
-		};
-
 
 		pinctrl_pcie0: pcie0grp {
 			fsl,pins = <
@@ -374,7 +395,6 @@
 
 		pinctrl_usdhc2_gpio: usdhc2grpgpio {
 			fsl,pins = <
-				MX8MQ_IOMUXC_SD2_CD_B_GPIO2_IO12	0x41
 				MX8MQ_IOMUXC_SD2_RESET_B_GPIO2_IO19	0x41
 			>;
 		};
@@ -387,7 +407,6 @@
 				MX8MQ_IOMUXC_SD2_DATA1_USDHC2_DATA1		0xc3
 				MX8MQ_IOMUXC_SD2_DATA2_USDHC2_DATA2		0xc3
 				MX8MQ_IOMUXC_SD2_DATA3_USDHC2_DATA3		0xc3
-				MX8MQ_IOMUXC_GPIO1_IO04_USDHC2_VSELECT		0xc1
 			>;
 		};
 
@@ -399,7 +418,6 @@
 				MX8MQ_IOMUXC_SD2_DATA1_USDHC2_DATA1		0xc5
 				MX8MQ_IOMUXC_SD2_DATA2_USDHC2_DATA2		0xc5
 				MX8MQ_IOMUXC_SD2_DATA3_USDHC2_DATA3		0xc5
-				MX8MQ_IOMUXC_GPIO1_IO04_USDHC2_VSELECT		0xc1
 			>;
 		};
 
@@ -411,7 +429,6 @@
 				MX8MQ_IOMUXC_SD2_DATA1_USDHC2_DATA1		0xc7
 				MX8MQ_IOMUXC_SD2_DATA2_USDHC2_DATA2		0xc7
 				MX8MQ_IOMUXC_SD2_DATA3_USDHC2_DATA3		0xc7
-				MX8MQ_IOMUXC_GPIO1_IO04_USDHC2_VSELECT		0xc1
 			>;
 		};
 
@@ -421,6 +438,15 @@
 				MX8MQ_IOMUXC_SAI2_TXC_SAI2_TX_BCLK	0xd6
 				MX8MQ_IOMUXC_SAI2_TXD0_SAI2_TX_DATA0	0xd6
 				MX8MQ_IOMUXC_SAI2_RXD0_SAI2_RX_DATA0	0xd6
+			>;
+		};
+
+		pinctrl_sai5: sai5grp {
+			fsl,pins = <
+				MX8MQ_IOMUXC_SAI5_RXD3_SAI5_TX_DATA0	0xd6
+				MX8MQ_IOMUXC_SAI5_RXD1_SAI5_TX_SYNC	0xd6
+				MX8MQ_IOMUXC_SAI5_RXD2_SAI5_TX_BCLK     0xd6
+				MX8MQ_IOMUXC_SAI5_RXD0_SAI5_RX_DATA0	0xd6
 			>;
 		};
 
@@ -446,28 +472,27 @@
 			>;
 		};
 
-		pinctrl_goodix_ts: gt1x {
-			fsl,pins = <
-				MX8MQ_IOMUXC_NAND_ALE_GPIO3_IO0		0x16	/* TOUCH INT */
-				MX8MQ_IOMUXC_SAI1_MCLK_GPIO4_IO20	0x16	/* TOUCH RST */
-			>;
-		};
-
 		pinctrl_pwm1: pwm1 {
 			fsl,pins = <
-				MX8MQ_IOMUXC_GPIO1_IO01_PWM1_OUT 0xc6
+				MX8MQ_IOMUXC_GPIO1_IO01_PWM1_OUT 	0xc6  /* DSI_BL_PWM */
 			>;
 		};
 		
-		pinctrl_pwm2: pwm2 {
+		pinctrl_micsel: micselgrp {
 			fsl,pins = <
-				MX8MQ_IOMUXC_SPDIF_RX_PWM2_OUT 0xc6
+				MX8MQ_IOMUXC_SPDIF_EXT_CLK_GPIO5_IO5 	0xc6  /* nHAPTIC */
 			>;
 		};
 
-		pinctrl_pwm3: pwm3 {
+		pinctrl_haptic: hapticgrp {
 			fsl,pins = <
-				MX8MQ_IOMUXC_SPDIF_TX_PWM3_OUT 0xc6
+				MX8MQ_IOMUXC_SPDIF_RX_GPIO5_IO4 	0xc6  /* nHAPTIC */
+			>;
+		};
+
+		pinctrl_mute: mute {
+			fsl,pins = <
+				MX8MQ_IOMUXC_SPDIF_TX_GPIO5_IO3 	0xc6  /* MUTE */
 			>;
 		};
 
@@ -477,9 +502,15 @@
 			>;
 		};
 
-		pinctrl_pmic: pmicirq {
+		pinctrl_prox: prox_nint {
 			fsl,pins = <
 				MX8MQ_IOMUXC_GPIO1_IO12_GPIO1_IO12	0x41 /*0x17059*/
+			>;
+		};
+
+		pinctrl_charger: charger_nirq {
+			fsl,pins = <
+				MX8MQ_IOMUXC_SAI5_MCLK_GPIO3_IO25	0xC6 /* CHRG_nINT */
 			>;
 		};
 
@@ -489,15 +520,21 @@
 			>;
 		};
 
-		pinctrl_charger: chargerirq {
+		pinctrl_headphone: headphonedet {
 			fsl,pins = <
-				MX8MQ_IOMUXC_SAI5_RXC_GPIO3_IO20	0xC6
+				MX8MQ_IOMUXC_SAI5_RXC_GPIO3_IO20	0xC6 /* HP_DET */
 			>;
 		};
 
 		pinctrl_spi1: spi1 {
 			fsl,pins = <
 				MX8MQ_IOMUXC_ECSPI1_SCLK_ECSPI1_SCLK	0x0f
+				/* proto is reversed 
+				MX8MQ_IOMUXC_ECSPI1_MOSI_ECSPI1_MOSI	0x0f
+				MX8MQ_IOMUXC_ECSPI1_MISO_ECSPI1_MISO	0x0f
+				*/
+				MX8MQ_IOMUXC_ECSPI1_MOSI_GPIO5_IO7	0x0f
+				MX8MQ_IOMUXC_ECSPI1_MISO_GPIO5_IO8	0x0f
 				MX8MQ_IOMUXC_ECSPI1_MOSI_ECSPI1_MOSI	0x0f
 				MX8MQ_IOMUXC_ECSPI1_MISO_ECSPI1_MISO	0x0f
 				MX8MQ_IOMUXC_ECSPI1_SS0_GPIO5_IO9	0x09
@@ -511,9 +548,14 @@
 			>;
 		};
 
+		pinctrl_imu: imugrp {
+			fsl,pins = <
+				MX8MQ_IOMUXC_SAI5_RXFS_GPIO3_IO19	0xC6 /* IMU_INT */
+			>;
+		};
+
 		pinctrl_gpio_leds: gpioleds {
 			fsl,pins = <
-				MX8MQ_IOMUXC_SAI5_RXFS_GPIO3_IO19	0x16
 				MX8MQ_IOMUXC_GPIO1_IO13_GPIO1_IO13	0x16
 			>;
 		};
@@ -570,8 +612,8 @@
 		reg = <0x4b>;
 		compatible = "rohm,bd71837";
 		/* PMIC BD71837 PMIC_nINT GPIO1_IO12 */
-		pinctrl-0 = <&pinctrl_pmic>;
-		gpio_intr = <&gpio1 12 GPIO_ACTIVE_LOW>;
+		//pinctrl-0 = <&pinctrl_pmic>;
+		//gpio_intr = <&gpio1 12 GPIO_ACTIVE_LOW>;
 
 		bd71837,pmic-buck1-uses-i2c-dvs;
 		bd71837,pmic-buck1-dvs-voltage = <900000>, <850000>, <800000>; /* VDD_SOC: Run-Idle-Suspend */
@@ -729,17 +771,6 @@
 		};
 	};
 
-	goodix_ts@5d {
-		compatible = "goodix,gt1x";
-		pinctrl-names = "default";
-		pinctrl-0 = <&pinctrl_goodix_ts>;
-		reg = <0x5d>;
-		interrupt-parent = <&gpio3>;
-		interrupts = <0  IRQ_TYPE_LEVEL_LOW>;
-		goodix,rst-gpio = <&gpio4 20 GPIO_ACTIVE_LOW>;
-		goodix,irq-gpio = <&gpio3 0 GPIO_ACTIVE_LOW>;
-	};
-
 	typec_ptn5100: ptn5110@50 {
 		compatible = "nxp,ptn5110";
 		pinctrl-names = "default";
@@ -777,16 +808,6 @@
 				};
 			};
 		};
-		/*
-		src-pdos = <0x380190c8>;
-		snk-pdos = <0x380190c8 0x3802d0c8>;
-		max-snk-mv = <9000>;
-		max-snk-ma = <1000>;
-		max-snk-mw = <9000>;
-		op-snk-mw = <9000>;
-		port-type = "drp";
-		default-role = "sink";
-		*/
 
 	};
 
@@ -895,13 +916,6 @@
 		ti,boost-voltage = <5000000>; // 5V
 		ti,boost-max-current = <50000>; // 50mA
 	};
-};
-
-&i2c4 {
-	clock-frequency = <100000>;
-	pinctrl-names = "default";
-	pinctrl-0 = <&pinctrl_i2c4>;
-	status = "okay";
 };
 
 &uart1 { /* console */
@@ -1281,13 +1295,7 @@
 
 &pwm2 {
 	pinctrl-names = "default";
-	pinctrl-0 = <&pinctrl_pwm2>;
-	status = "okay";
-};
-
-&pwm3 {
-	pinctrl-names = "default";
-	pinctrl-0 = <&pinctrl_pwm3>;
+	pinctrl-0 = <&pinctrl_haptic>;
 	status = "okay";
 };
 
