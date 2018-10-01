@@ -133,8 +133,10 @@ static int etnaviv_gem_mmap_obj(struct etnaviv_gem_object *etnaviv_obj,
 
 	vm_page_prot = vm_get_page_prot(vma->vm_flags);
 
-	if (etnaviv_obj->flags & (ETNA_BO_WC | ETNA_BO_UNCACHED)) {
+	if (etnaviv_obj->flags & ETNA_BO_WC) {
 		vma->vm_page_prot = pgprot_writecombine(vm_page_prot);
+	} else if (etnaviv_obj->flags & ETNA_BO_UNCACHED) {
+		vma->vm_page_prot = pgprot_noncached(vm_page_prot);
 	} else {
 		/*
 		 * Shunt off cached objs to shmem file so they have their own
