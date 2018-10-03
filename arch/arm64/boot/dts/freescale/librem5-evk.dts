@@ -825,6 +825,15 @@
 		ti,boost-voltage = <5000000>; // 5V
 		ti,boost-max-current = <50000>; // 50mA
 	};
+
+        rtc@68 {
+                compatible = "microcrystal,rv4162";
+                reg = <0x68>;
+		pinctrl-0 = <&pinctrl_rtc>;
+		interrupt-parent = <&gpio4>;
+		interrupts = <29 IRQ_TYPE_LEVEL_LOW>;
+        };
+
 #if 0
 	ov5640_mipi: ov5640_mipi@3c {
 		compatible = "ovti,ov5640_mipi";
