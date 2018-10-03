@@ -811,6 +811,20 @@
 
 	};
 
+	charger: charger@6b { /* bq25896 */
+		compatible = "ti,bq25896";
+		reg = <0x6b>;
+		pinctrl-0 = <&pinctrl_charger>;
+		interrupt-parent = <&gpio3>;
+		interrupts = <25 IRQ_TYPE_LEVEL_LOW>;
+		ti,battery-regulation-voltage = <4192000>; // 4.196V
+		ti,charge-current = <1600000>; // 1.6 A
+		ti,termination-current = <66000>;  // 66mA
+		ti,precharge-current = <1300000>; // 1.3A
+		ti,minimum-sys-voltage = <2750000>; // 2.75V
+		ti,boost-voltage = <5000000>; // 5V
+		ti,boost-max-current = <50000>; // 50mA
+	};
 #if 0
 	ov5640_mipi: ov5640_mipi@3c {
 		compatible = "ovti,ov5640_mipi";
@@ -902,20 +916,6 @@
 	status = "disabled";
 #endif
 
-	charger: charger@6b { /* bq25896 */
-		compatible = "ti,bq25896";
-		reg = <0x6b>;
-		pinctrl-0 = <&pinctrl_charger>;
-		interrupt-parent = <&gpio3>;
-		interrupts = <20 IRQ_TYPE_LEVEL_LOW>;
-		ti,battery-regulation-voltage = <4192000>; // 4.2V
-		ti,charge-current = <1600000>; // 2.6 A
-		ti,termination-current = <66000>;  // 66mA
-		ti,precharge-current = <1300000>; // 1.3A
-		ti,minimum-sys-voltage = <2750000>; // 2.75V
-		ti,boost-voltage = <5000000>; // 5V
-		ti,boost-max-current = <50000>; // 50mA
-	};
 };
 
 &uart1 { /* console */
