@@ -892,16 +892,6 @@
 		reg = <0x1a>;
 		clocks = <&sound_osc 0>;
 	};
-
-	ds1339: rtc@68 {
-		compatible = "dallas,ds1339";
-		reg = <0x68>;
-		/* RTC DS1339U-33+ nIRQ GPIO4_IO29 */
-		pinctrl-0 = <&pinctrl_rtc>;
-		interrupt-parent = <&gpio4>;
-		interrupts = <29 IRQ_TYPE_EDGE_FALLING>;
-		status = "disabled";
-	};
 };
 
 &i2c2 {
