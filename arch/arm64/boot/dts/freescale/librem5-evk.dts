@@ -217,7 +217,7 @@
 		pinctrl_wwan: wwan_grp {
 			fsl,pins = <
 				MX8MQ_IOMUXC_NAND_CE3_B_GPIO3_IO4	0x49	/* nWWAN_DISABLE */
-				MX8MQ_IOMUXC_NAND_DATA02_GPIO3_IO8	0x16	/* nWoWWAN */
+				MX8MQ_IOMUXC_NAND_DATA02_GPIO3_IO8	0x80	/* nWoWWAN */
 				MX8MQ_IOMUXC_NAND_DATA03_GPIO3_IO9	0x19	/* WWAN_RESET */
 			>;
 		};
@@ -468,7 +468,7 @@
 
 		pinctrl_wdog: wdoggrp {
 			fsl,pins = <
-				MX8MQ_IOMUXC_GPIO1_IO02_WDOG1_WDOG_B 0xc6
+				MX8MQ_IOMUXC_GPIO1_IO02_WDOG1_WDOG_B 	0xc6
 			>;
 		};
 
@@ -480,7 +480,7 @@
 		
 		pinctrl_micsel: micselgrp {
 			fsl,pins = <
-				MX8MQ_IOMUXC_SPDIF_EXT_CLK_GPIO5_IO5 	0xc6  /* nHAPTIC */
+				MX8MQ_IOMUXC_SPDIF_EXT_CLK_GPIO5_IO5 	0xc6  /* mic sel */
 			>;
 		};
 
@@ -498,43 +498,39 @@
 
 		pinctrl_pwm4: pwm4 {
 			fsl,pins = <
-				MX8MQ_IOMUXC_I2C3_SCL_PWM4_OUT 0xc6
+				MX8MQ_IOMUXC_I2C3_SCL_PWM4_OUT 		0xc6
 			>;
 		};
 
 		pinctrl_prox: prox_nint {
 			fsl,pins = <
-				MX8MQ_IOMUXC_GPIO1_IO12_GPIO1_IO12	0x41 /*0x17059*/
+				MX8MQ_IOMUXC_GPIO1_IO12_GPIO1_IO12	0x80
 			>;
 		};
 
 		pinctrl_charger: charger_nirq {
 			fsl,pins = <
-				MX8MQ_IOMUXC_SAI5_MCLK_GPIO3_IO25	0xC6 /* CHRG_nINT */
+				MX8MQ_IOMUXC_SAI5_MCLK_GPIO3_IO25	0x80 /* CHRG_nINT */
 			>;
 		};
 
 		pinctrl_rtc: rtcirq {
 			fsl,pins = <
-				MX8MQ_IOMUXC_SAI3_RXC_GPIO4_IO29	0xC6
+				MX8MQ_IOMUXC_SAI3_RXC_GPIO4_IO29	0x80
 			>;
 		};
 
 		pinctrl_headphone: headphonedet {
 			fsl,pins = <
-				MX8MQ_IOMUXC_SAI5_RXC_GPIO3_IO20	0xC6 /* HP_DET */
+				MX8MQ_IOMUXC_SAI5_RXC_GPIO3_IO20	0x80 /* HP_DET */
 			>;
 		};
 
 		pinctrl_spi1: spi1 {
 			fsl,pins = <
 				MX8MQ_IOMUXC_ECSPI1_SCLK_ECSPI1_SCLK	0x0f
-				/* proto is reversed 
 				MX8MQ_IOMUXC_ECSPI1_MOSI_ECSPI1_MOSI	0x0f
 				MX8MQ_IOMUXC_ECSPI1_MISO_ECSPI1_MISO	0x0f
-				*/
-				MX8MQ_IOMUXC_ECSPI1_MOSI_GPIO5_IO7	0x0f
-				MX8MQ_IOMUXC_ECSPI1_MISO_GPIO5_IO8	0x0f
 				MX8MQ_IOMUXC_ECSPI1_MOSI_ECSPI1_MOSI	0x0f
 				MX8MQ_IOMUXC_ECSPI1_MISO_ECSPI1_MISO	0x0f
 				MX8MQ_IOMUXC_ECSPI1_SS0_GPIO5_IO9	0x09
@@ -550,7 +546,7 @@
 
 		pinctrl_imu: imugrp {
 			fsl,pins = <
-				MX8MQ_IOMUXC_SAI5_RXFS_GPIO3_IO19	0xC6 /* IMU_INT */
+				MX8MQ_IOMUXC_SAI5_RXFS_GPIO3_IO19	0x80 /* IMU_INT */
 			>;
 		};
 
