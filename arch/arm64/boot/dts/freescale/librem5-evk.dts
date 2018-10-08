@@ -132,11 +132,6 @@
 
 		led1 {
 			label = "LED 1";
-			gpios = <&gpio3 19 GPIO_ACTIVE_HIGH>;
-			default-state = "off";
-		};
-		led2 {
-			label = "LED 2";
 			gpios = <&gpio1 13 GPIO_ACTIVE_HIGH>;
 			default-state = "off";
 		};
