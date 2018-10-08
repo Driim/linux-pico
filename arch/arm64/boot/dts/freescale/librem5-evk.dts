@@ -805,6 +805,7 @@
 	charger: charger@6b { /* bq25896 */
 		compatible = "ti,bq25896";
 		reg = <0x6b>;
+		pinctrl-names = "default";
 		pinctrl-0 = <&pinctrl_charger>;
 		interrupt-parent = <&gpio3>;
 		interrupts = <25 IRQ_TYPE_LEVEL_LOW>;
@@ -818,6 +819,7 @@
 	};
 
         rtc@68 {
+		pinctrl-names = "default";
                 compatible = "microcrystal,rv4162";
                 reg = <0x68>;
 		pinctrl-0 = <&pinctrl_rtc>;
