@@ -209,12 +209,6 @@
 			>;
 		};
 
-		pintctl_wifi: wifigrp {
-			fsl,pins = <
-				MX8MQ_IOMUXC_SAI2_MCLK_GPIO4_IO27	0x16 	/* WIFI_WAKE */
-			>;
-		};
-		
 		pinctrl_wwan: wwan_grp {
 			fsl,pins = <
 				MX8MQ_IOMUXC_NAND_CE3_B_GPIO3_IO4	0x49	/* nWWAN_DISABLE */
@@ -396,7 +390,8 @@
 
 		pinctrl_usdhc2_gpio: usdhc2grpgpio {
 			fsl,pins = <
-				MX8MQ_IOMUXC_SD2_RESET_B_GPIO2_IO19	0x41
+				MX8MQ_IOMUXC_SD2_RESET_B_GPIO2_IO19		0x41
+				MX8MQ_IOMUXC_SD2_WP_GPIO2_IO20			0x80 	/* WIFI_WAKE */
 			>;
 		};
 
