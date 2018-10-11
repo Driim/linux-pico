@@ -154,6 +154,12 @@
 			gpio-key,wakeup;
 			linux,code = <114>;
 		};
+		hp_det {
+			label = "HP_DET";
+			gpios = <&gpio3 20 GPIO_ACTIVE_LOW>;
+			gpio-key,wakeup;
+			linux,code = <211>;
+		};
 	};
 
         backlight_dsi {
@@ -433,6 +439,7 @@
 				MX8MQ_IOMUXC_SAI2_TXC_SAI2_TX_BCLK	0xd6
 				MX8MQ_IOMUXC_SAI2_TXD0_SAI2_TX_DATA0	0xd6
 				MX8MQ_IOMUXC_SAI2_RXD0_SAI2_RX_DATA0	0xd6
+				MX8MQ_IOMUXC_SAI2_MCLK_SAI2_MCLK	0xd6
 			>;
 		};
 
@@ -515,12 +522,6 @@
 			>;
 		};
 
-		pinctrl_headphone: headphonedet {
-			fsl,pins = <
-				MX8MQ_IOMUXC_SAI5_RXC_GPIO3_IO20	0x80 /* HP_DET */
-			>;
-		};
-
 		pinctrl_spi1: spi1 {
 			fsl,pins = <
 				MX8MQ_IOMUXC_ECSPI1_SCLK_ECSPI1_SCLK	0x0f
@@ -555,6 +556,7 @@
 			fsl,pins = <
 				MX8MQ_IOMUXC_SAI2_RXFS_GPIO4_IO21	0x16
 				MX8MQ_IOMUXC_SAI2_RXC_GPIO4_IO22	0x16
+				MX8MQ_IOMUXC_SAI5_RXC_GPIO3_IO20	0x80 /* HP_DET */
 			>;
 		};
 	};
