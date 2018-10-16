@@ -838,10 +838,6 @@ static void __init imx8mq_clocks_init(struct device_node *ccm_node)
 	clk_data.clk_num = ARRAY_SIZE(clks);
 	of_clk_add_provider(np, of_clk_src_onecell_get, &clk_data);
 
-       /* enable all the clocks just for bringup */
-       for (i = 0; i < ARRAY_SIZE(clks_init_on);  i++)
-		clk_prepare_enable(clks[clks_init_on[i]]);
-
 	clk_set_parent(clks[IMX8MQ_VIDEO2_PLL1_OUT], clks[IMX8MQ_VIDEO2_PLL1]);
 	clk_set_parent(clks[IMX8MQ_VIDEO2_PLL2_OUT], clks[IMX8MQ_VIDEO2_PLL2_DIV]);
 
