@@ -26,6 +26,8 @@ config SOC_IMX8MQ
 	select PM_OPP if PM
 	select SOC_BUS
 	select SRAM
+	select VIDEO_MX8_CAPTURE
+	select VIDEO_V4L2_SUBDEV_API
 
 	help
 	  This enables support for the i.MX8MQ SoC.

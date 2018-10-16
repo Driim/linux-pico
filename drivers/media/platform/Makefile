@@ -92,4 +92,8 @@ obj-$(CONFIG_VIDEO_QCOM_CAMSS)		+= qcom/camss-8x16/
 
 obj-$(CONFIG_VIDEO_QCOM_VENUS)		+= qcom/venus/
 
+obj-$(CONFIG_VIDEO_MXC_CAPTURE) += mxc/capture/
+obj-$(CONFIG_VIDEO_MXC_OUTPUT)  += mxc/output/
+obj-$(CONFIG_VIDEO_MX8_CAPTURE) += imx8/
+
 obj-y					+= meson/

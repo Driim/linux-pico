@@ -179,8 +179,6 @@
 };
 
 &iomuxc {
-	pinctrl-names = "default";
-	pinctrl-0 = <&pinctrl_csiclk>;
 
 	imx8m-som {
 		pinctrl_nc: ncgrp {
@@ -199,7 +197,7 @@
 
 		pinctrl_csi1: csi1grp {
 			fsl,pins = <
-				MX8MQ_IOMUXC_GPIO1_IO07_GPIO1_IO7		0x19
+				MX8MQ_IOMUXC_GPIO1_IO14_GPIO1_IO14		0x19
 			>;
 		};
 
@@ -526,12 +524,6 @@
 			>;
 		};
 
-		pinctrl_csiclk: csiclk {
-			fsl,pins = <
-				MX8MQ_IOMUXC_GPIO1_IO14_CCMSRCGPCMIX_CLKO1	0x59
-			>;
-		};
-
 		pinctrl_imu: imugrp {
 			fsl,pins = <
 				MX8MQ_IOMUXC_SAI5_RXFS_GPIO3_IO19	0x80 /* IMU_INT */
@@ -833,59 +825,6 @@
         };
 
 #if 0
-	ov5640_mipi: ov5640_mipi@3c {
-		compatible = "ovti,ov5640_mipi";
-		reg = <0x3c>;
-#ifndef CSI2_CAM_ENABLE
-		status = "okay";
-#else
-		status = "disabled";
-#endif
-		pinctrl-names = "default";
-		pinctrl-0 = <&pinctrl_csi1>;
-		clocks = <&clk IMX8MQ_CLK_CLKO1_DIV>;
-		clock-names = "csi_mclk";
-		assigned-clocks = <&clk IMX8MQ_CLK_CLKO1_SRC>,
-				  <&clk IMX8MQ_CLK_CLKO1_DIV>;
-		assigned-clock-parents = <&clk IMX8MQ_SYS1_PLL_200M>;
-		assigned-clock-rates = <0>, <20000000>;
-		csi_id = <0>;
-		pwn-gpios = <&gpio1 7 GPIO_ACTIVE_LOW>;
-		mclk = <20000000>;
-		mclk_source = <0>;
-		port {
-			ov5640_mipi1_ep: endpoint {
-				remote-endpoint = <&mipi1_sensor_ep>;
-			};
-		};
-	};
-
-	ov5640_mipi2: ov5640_mipi2@3c {
-		compatible = "ovti,ov5640_mipi";
-		reg = <0x3c>;
-#ifdef CSI2_CAM_ENABLE
-		status = "okay";
-#else
-		status = "disabled";
-#endif
-		pinctrl-names = "default";
-		pinctrl-0 = <&pinctrl_csi2>;
-		clocks = <&clk IMX8MQ_CLK_CLKO1_DIV>;
-		clock-names = "csi_mclk";
-		assigned-clocks = <&clk IMX8MQ_CLK_CLKO1_SRC>,
-				  <&clk IMX8MQ_CLK_CLKO1_DIV>;
-		assigned-clock-parents = <&clk IMX8MQ_SYS1_PLL_200M>;
-		assigned-clock-rates = <0>, <20000000>;
-		csi_id = <0>;
-		pwn-gpios = <&gpio1 5 GPIO_ACTIVE_LOW>;
-		mclk = <20000000>;
-		mclk_source = <0>;
-		port {
-			ov5640_mipi2_ep: endpoint {
-				remote-endpoint = <&mipi2_sensor_ep>;
-			};
-		};
-	};
 #endif
 
 	nau8820_codec: nau8820@1a {
@@ -900,19 +839,37 @@
 	clock-frequency = <100000>;
 	pinctrl-names = "default";
 	pinctrl-0 = <&pinctrl_i2c2>;
-	status = "okay";
+	status = "disabled";
 };
 
 &i2c3 {
 	clock-frequency = <100000>;
 	pinctrl-names = "default";
 	pinctrl-0 = <&pinctrl_i2c3>;
-#ifdef I2C3_ENABLE
 	status = "okay";
-#else
-	status = "disabled";
-#endif
 
+	ov5640_mipi: ov5640_mipi@3c {
+		compatible = "ovti,ov5640_mipi";
+		reg = <0x3c>;
+		status = "okay";
+		pinctrl-names = "default";
+		pinctrl-0 = <&pinctrl_csi1>;
+		clocks = <&clk IMX8MQ_CLK_CLKO1_DIV>;
+		clock-names = "csi_mclk";
+		assigned-clocks = <&clk IMX8MQ_CLK_CLKO1_SRC>,
+				  <&clk IMX8MQ_CLK_CLKO1_DIV>;
+		assigned-clock-parents = <&clk IMX8MQ_SYS1_PLL_200M>;
+		assigned-clock-rates = <0>, <20000000>;
+		csi_id = <0>;
+		pwn-gpios = <&gpio1 14 GPIO_ACTIVE_LOW>;
+		mclk = <20000000>;
+		mclk_source = <0>;
+		port {
+			ov5640_mipi1_ep: endpoint {
+				remote-endpoint = <&mipi1_sensor_ep>;
+			};
+		};
+	};
 };
 
 &uart1 { /* console */
@@ -1024,7 +981,7 @@
 	clocks = <&clk IMX8MQ_CLK_SAI2_IPG>;
 	clock-names = "bus";
 
-	power-supply = <&reg_pwr_en>;
+	/* power-supply = <&reg_pwr_en>; */
 	status = "okay";
 };
 
@@ -1216,10 +1173,9 @@
 
 #endif /* USE_HDMI */
 
-#if TODO
 &csi1_bridge {
 	fsl,mipi-mode;
-	fsl,two-8bit-sensor-mode;
+	/* fsl,two-8bit-sensor-mode; */
 	status = "okay";
 
 	port {
@@ -1229,17 +1185,6 @@
 	};
 };
 
-&csi2_bridge {
-	fsl,mipi-mode;
-	fsl,two-8bit-sensor-mode;
-	status = "okay";
-
-	port {
-		csi2_ep: endpoint {
-			remote-endpoint = <&csi2_mipi_ep>;
-		};
-	};
-};
 
 &mipi_csi_1 {
 	#address-cells = <1>;
@@ -1257,23 +1202,6 @@
 	};
 };
 
-&mipi_csi_2 {
-	#address-cells = <1>;
-	#size-cells = <0>;
-	status = "okay";
-	port {
-		mipi2_sensor_ep: endpoint1 {
-			remote-endpoint = <&ov5640_mipi2_ep>;
-			data-lanes = <1 2>;
-		};
-
-		csi2_mipi_ep: endpoint2 {
-			remote-endpoint = <&csi2_ep>;
-		};
-	};
-};
-
-#endif
 &pwm1 {
 	pinctrl-names = "default";
 	pinctrl-0 = <&pinctrl_pwm1>;
