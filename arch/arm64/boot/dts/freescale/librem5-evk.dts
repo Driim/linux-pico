@@ -78,13 +78,6 @@
 		#reset-cells = <0>;
 	};
 
-	touch_reset: touch-reset {
-		compatible = "gpio-reset";
-		reset-gpios = <&gpio3 9 GPIO_ACTIVE_LOW>;
-		reset-delay-us = <10000>;
-		#reset-cells = <0>;
-	};
-
 	sound_osc: oscillator {
 		compatible = "fixed-clock";
 		#clock-cells = <1>;
@@ -198,12 +191,6 @@
 		pinctrl_csi1: csi1grp {
 			fsl,pins = <
 				MX8MQ_IOMUXC_GPIO1_IO14_GPIO1_IO14		0x19
-			>;
-		};
-
-		pinctrl_touch: touch_nrst {
-			fsl,pins = <
-				MX8MQ_IOMUXC_GPIO1_IO05_GPIO1_IO5		0x19
 			>;
 		};
 
@@ -543,6 +530,14 @@
 				MX8MQ_IOMUXC_SAI5_RXC_GPIO3_IO20	0x1C0 /* HP_DET */
 			>;
 		};
+
+                pinctrl_goodix_ts: gt5688 {
+                        fsl,pins = <
+                                MX8MQ_IOMUXC_NAND_ALE_GPIO3_IO0         0x16    /* TOUCH INT */
+				MX8MQ_IOMUXC_GPIO1_IO05_GPIO1_IO5	0x19    /* TOUCH RST */
+                        >;
+                };
+
 	};
 };
 
@@ -870,6 +865,18 @@
 			};
 		};
 	};
+
+        goodix_ts@5d {
+                compatible = "goodix,gt5688", "goodix,gt1x";
+                pinctrl-names = "default";
+                pinctrl-0 = <&pinctrl_goodix_ts>;
+                reg = <0x5d>;
+                interrupt-parent = <&gpio3>;
+                interrupts = <0  IRQ_TYPE_LEVEL_LOW>;
+                goodix,rst-gpio = <&gpio1 5 GPIO_ACTIVE_LOW>;
+                goodix,irq-gpio = <&gpio3 0 GPIO_ACTIVE_LOW>;
+        };
+
 };
 
 &uart1 { /* console */
