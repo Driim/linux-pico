@@ -85,6 +85,32 @@
 		clock-output-names = "sound_osc";
 	};
 
+	sound {
+		compatible = "simple-audio-card";
+		simple-audio-card,name = "sgtl5000-audio";
+		pinctrl-names = "default";
+		pinctrl-0 = <&pinctrl_sai2>;
+		simple-audio-card,format = "i2s";
+		simple-audio-card,bitclock-master = <&codec_dai>;
+		simple-audio-card,frame-master = <&codec_dai>;
+		simple-audio-card,widgets =
+			"Microphone", "Mic Jack",
+			"Line", "Line In",
+			"Line", "Line Out",
+			"Headphone", "Headphone Jack";
+		simple-audio-card,routing =
+			"MIC_IN", "Mic Jack",
+			"Mic Jack", "Mic Bias",
+			"Headphone Jack", "HP_OUT";
+
+		cpu_dai: simple-audio-card,cpu {
+			sound-dai = <&sai2>;
+		};
+
+		codec_dai: simple-audio-card,codec {
+			sound-dai = <&sgtl5000>;
+		};
+	};
 #if TODO
 	sound-nau8820 {
 		compatible = "fsl,imx-audio-wm8985";
@@ -876,6 +902,15 @@
                 goodix,rst-gpio = <&gpio1 5 GPIO_ACTIVE_LOW>;
                 goodix,irq-gpio = <&gpio3 0 GPIO_ACTIVE_LOW>;
         };
+
+	sgtl5000: sgtl5000@a {
+		compatible = "fsl,sgtl5000";
+		#sound-dai-cells = <0>;
+		reg = <0x0a>;
+		// VDDA-supply = <&reg_2v5>;
+		// VDDIO-supply = <&reg_3v3>;
+		clocks = <&mclk>;
+	};
 
 };
 

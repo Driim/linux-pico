@@ -81,6 +81,13 @@
 		clock-output-names = "clk_ext4";
 	};
 
+	mclk: mclk {
+		compatible = "fixed-clock";
+		#clock-cells = <0>;
+		clock-frequency = <26000000>;
+		clock-output-names = "mclk";
+	};
+
 	cpus {
 		#address-cells = <1>;
 		#size-cells = <0>;
