@@ -160,6 +160,17 @@
 			default-state = "off";
 		};
 
+		csi_nrst {
+			label = "CSI_nRST";
+			gpios = <&gpio1 6 GPIO_ACTIVE_HIGH>;
+			default-state = "off";
+		};
+
+		csi_pdwn {
+			label = "CSI_PDWN";
+			gpios = <&gpio1 7 GPIO_ACTIVE_HIGH>;
+			default-state = "on";
+		};
 	};
 
 	gpio-keys {
@@ -222,6 +233,8 @@
 
 		pinctrl_csi1: csi1grp {
 			fsl,pins = <
+				MX8MQ_IOMUXC_GPIO1_IO06_GPIO1_IO6		0x11  /* CSI_nRST */
+				MX8MQ_IOMUXC_GPIO1_IO07_GPIO1_IO7		0x19  /* CSI_PWDN */
 				MX8MQ_IOMUXC_GPIO1_IO14_CCMSRCGPCMIX_CLKO1	0x19  /* CLK01 */
 			>;
 		};
