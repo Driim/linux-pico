@@ -14,10 +14,12 @@ config IMX8_CAPTURE_DRIVER
 
 config IMX8_MIPI_CSI2
 	tristate "IMX8 MIPI CSI2 Controller"
+	select V4L2_FWNODE
 	default y
 
 config IMX8_MIPI_CSI2_YAV
 	tristate "IMX8 MIPI CSI2 Controller Yet Another Version"
+	select V4L2_FWNODE
 	default y
 
 config GMSL_MAX9286

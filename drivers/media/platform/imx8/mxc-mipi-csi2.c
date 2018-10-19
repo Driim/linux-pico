@@ -27,7 +27,7 @@
 #include <linux/slab.h>
 #include <linux/spinlock.h>
 #include <linux/videodev2.h>
-#include <media/v4l2-of.h>
+#include <media/v4l2-fwnode.h>
 #include <media/v4l2-subdev.h>
 #include <media/v4l2-device.h>
 #include <soc/imx8/sc/sci.h>
@@ -516,7 +516,7 @@ static int mipi_csi2_parse_dt(struct mxc_mipi_csi2_dev *csi2dev)
 {
 	struct device *dev = &csi2dev->pdev->dev;
 	struct device_node *node = dev->of_node;
-	struct v4l2_of_endpoint endpoint;
+	struct v4l2_fwnode_endpoint endpoint;
 	u32 i;
 
 	csi2dev->id = of_alias_get_id(node, "csi");
@@ -530,7 +530,7 @@ static int mipi_csi2_parse_dt(struct mxc_mipi_csi2_dev *csi2dev)
 	}
 
 	/* Get port node */
-	v4l2_of_parse_endpoint(node, &endpoint);
+	v4l2_fwnode_endpoint_parse(of_fwnode_handle(node), &endpoint);
 
 	csi2dev->num_lanes = endpoint.bus.mipi_csi2.num_data_lanes;
 	for (i = 0; i < 4; i++)

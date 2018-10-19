@@ -29,7 +29,7 @@
 #include <linux/slab.h>
 #include <media/v4l2-async.h>
 #include <media/v4l2-ctrls.h>
-#include <media/v4l2-of.h>
+#include <media/v4l2-fwnode.h>
 #include <media/media-device.h>
 
 #include "mxc-media-dev.h"
@@ -243,7 +243,7 @@ static int subdev_notifier_bound(struct v4l2_async_notifier *notifier,
 
 	/* Find platform data for this sensor subdev */
 	for (i = 0; i < ARRAY_SIZE(mxc_md->sensor); i++) {
-		if (mxc_md->sensor[i].asd.match.of.node == sd->dev->of_node)
+		if (mxc_md->sensor[i].asd.match.fwnode == of_fwnode_handle(sd->dev->of_node))
 			sensor = &mxc_md->sensor[i];
 	}
 
@@ -299,7 +299,7 @@ static int register_sensor_entities(struct mxc_md *mxc_md)
 {
 	struct device_node *parent = mxc_md->pdev->dev.of_node;
 	struct device_node *node, *ep, *rem;
-	struct v4l2_of_endpoint endpoint;
+	struct v4l2_fwnode_endpoint endpoint;
 	int index = 0;
 
 	mxc_md->num_sensors = 0;
@@ -320,7 +320,7 @@ static int register_sensor_entities(struct mxc_md *mxc_md)
 		if (!ep)
 			return -EINVAL;
 
-		v4l2_of_parse_endpoint(ep, &endpoint);
+		v4l2_fwnode_endpoint_parse(of_fwnode_handle(ep), &endpoint);
 		if (WARN_ON(endpoint.base.port >= MXC_MAX_MIPI_SENSORS)) {
 			v4l2_err(&mxc_md->v4l2_dev, "Failed to get sensor endpoint\n");
 			return -EINVAL;
@@ -337,8 +337,8 @@ static int register_sensor_entities(struct mxc_md *mxc_md)
 			continue;
 		}
 
-		mxc_md->sensor[index].asd.match_type = V4L2_ASYNC_MATCH_OF;
-		mxc_md->sensor[index].asd.match.of.node = rem;
+		mxc_md->sensor[index].asd.match_type = V4L2_ASYNC_MATCH_FWNODE;
+		mxc_md->sensor[index].asd.match.fwnode = of_fwnode_handle(rem);
 		mxc_md->async_subdevs[index] = &mxc_md->sensor[index].asd;
 
 		mxc_md->num_sensors++;
@@ -492,6 +492,10 @@ static const struct media_device_ops mxc_md_ops = {
 	.link_notify = mxc_md_link_notify,
 };
 
+static const struct v4l2_async_notifier_operations subdev_notifier_ops = {
+	.bound = subdev_notifier_bound,
+	.complete = subdev_notifier_complete,
+};
 
 static int mxc_md_probe(struct platform_device *pdev)
 {
@@ -538,8 +542,7 @@ static int mxc_md_probe(struct platform_device *pdev)
 	if (mxc_md->num_sensors > 0) {
 		mxc_md->subdev_notifier.subdevs = mxc_md->async_subdevs;
 		mxc_md->subdev_notifier.num_subdevs = mxc_md->num_sensors;
-		mxc_md->subdev_notifier.bound = subdev_notifier_bound;
-		mxc_md->subdev_notifier.complete = subdev_notifier_complete;
+		mxc_md->subdev_notifier.ops = &subdev_notifier_ops;
 		mxc_md->num_sensors = 0;
 
 		ret = v4l2_async_notifier_register(&mxc_md->v4l2_dev,

@@ -180,20 +180,20 @@ static int mxc_isi_pipeline_enable(struct mxc_isi_dev *mxc_isi, bool enable)
 {
 	struct media_entity *entity = &mxc_isi->isi_cap.vdev.entity;
 	struct media_device *mdev = entity->graph_obj.mdev;
-	struct media_entity_graph graph;
+	struct media_graph graph;
 	struct v4l2_subdev *subdev;
 	int ret = 0;
 
 	mutex_lock(&mdev->graph_mutex);
 
-	ret = media_entity_graph_walk_init(&graph, entity->graph_obj.mdev);
+	ret = media_graph_walk_init(&graph, entity->graph_obj.mdev);
 	if (ret) {
 		mutex_unlock(&mdev->graph_mutex);
 		return ret;
 	}
-	media_entity_graph_walk_start(&graph, entity);
+	media_graph_walk_start(&graph, entity);
 
-	while ((entity = media_entity_graph_walk_next(&graph))) {
+	while ((entity = media_graph_walk_next(&graph))) {
 		if (entity == NULL) {
 			dev_dbg(&mxc_isi->pdev->dev,
 					"%s ,entity is NULL\n", __func__);
@@ -221,7 +221,7 @@ static int mxc_isi_pipeline_enable(struct mxc_isi_dev *mxc_isi, bool enable)
 		}
 	}
 	mutex_unlock(&mdev->graph_mutex);
-	media_entity_graph_walk_cleanup(&graph);
+	media_graph_walk_cleanup(&graph);
 
 	return ret;
 }
