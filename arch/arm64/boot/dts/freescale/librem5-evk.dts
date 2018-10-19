@@ -99,7 +99,7 @@
 
 	sound_osc: oscillator {
 		compatible = "fixed-clock";
-		#clock-cells = <1>;
+		#clock-cells = <0>;
 		clock-frequency  = <12000000>;
 		clock-output-names = "sound_osc";
 	};
@@ -912,15 +912,13 @@
 &i2c3 {
 	clock-frequency = <100000>;
 	pinctrl-names = "default";
-	pinctrl-0 = <&pinctrl_i2c3>;
+	pinctrl-0 = <&pinctrl_i2c3>, <&pinctrl_csi1>;
 	status = "okay";
 
 	ov5640_mipi: ov5640_mipi@3c {
 		compatible = "ovti,ov5640_mipi";
 		reg = <0x78>;
 		status = "okay";
-		pinctrl-names = "default";
-		pinctrl-0 = <&pinctrl_csi1>;
 		clocks = <&clk IMX8MQ_CLK_CLKO1_DIV>;
 		clock-names = "csi_mclk";
 		assigned-clocks = <&clk IMX8MQ_CLK_CLKO1_SRC>,
@@ -953,8 +951,6 @@
 		compatible = "fsl,sgtl5000";
 		#sound-dai-cells = <0>;
 		reg = <0x0a>;
-		// VDDA-supply = <&reg_2v5>;
-		// VDDIO-supply = <&reg_3v3>;
 		clocks = <&sound_osc>;
 	};
 
