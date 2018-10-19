@@ -81,13 +81,6 @@
 		clock-output-names = "clk_ext4";
 	};
 
-	mclk: mclk {
-		compatible = "fixed-clock";
-		#clock-cells = <0>;
-		clock-frequency = <26000000>;
-		clock-output-names = "mclk";
-	};
-
 	cpus {
 		#address-cells = <1>;
 		#size-cells = <0>;
@@ -786,7 +779,7 @@
 			sai1: sai@30010000 {
 				compatible = "fsl,imx8mq-sai",
 					     "fsl,imx6sx-sai";
-				reg = <0x0 0x30010000 0x0 0x10000>;
+				reg = <0x30010000 0x10000>;
 				interrupts = <GIC_SPI 95 IRQ_TYPE_LEVEL_HIGH>;
 				clocks = <&clk IMX8MQ_CLK_SAI1_IPG>,
 					<&clk IMX8MQ_CLK_DUMMY>,
@@ -802,7 +795,7 @@
 			sai6: sai@30030000 {
 				compatible = "fsl,imx8mq-sai",
 					     "fsl,imx6sx-sai";
-				reg = <0x0 0x30030000 0x0 0x10000>;
+				reg = <0x30030000 0x10000>;
 				interrupts = <GIC_SPI 90 IRQ_TYPE_LEVEL_HIGH>;
 				clocks = <&clk IMX8MQ_CLK_SAI6_IPG>,
 					<&clk IMX8MQ_CLK_DUMMY>,
@@ -818,7 +811,7 @@
 			sai5: sai@30040000 {
 				compatible = "fsl,imx8mq-sai",
 					     "fsl,imx6sx-sai";
-				reg = <0x0 0x30040000 0x0 0x10000>;
+				reg = <0x30040000 0x10000>;
 				interrupts = <GIC_SPI 90 IRQ_TYPE_LEVEL_HIGH>;
 				clocks = <&clk IMX8MQ_CLK_SAI5_IPG>,
 					<&clk IMX8MQ_CLK_DUMMY>,
@@ -835,7 +828,7 @@
 			sai4: sai@30050000 {
 				compatible = "fsl,imx8mq-sai",
 					     "fsl,imx6sx-sai";
-				reg = <0x0 0x30050000 0x0 0x10000>;
+				reg = <0x30050000 0x10000>;
 				interrupts = <GIC_SPI 100 IRQ_TYPE_LEVEL_HIGH>;
 				clocks = <&clk IMX8MQ_CLK_SAI4_IPG>,
 					<&clk IMX8MQ_CLK_DUMMY>,
@@ -897,7 +890,7 @@
 
 		        ecspi1: ecspi@30820000 {
 				compatible = "fsl,imx6ul-ecspi", "fsl,imx51-ecspi";
-				reg = <0x0 0x30820000 0x0 0x10000>;
+				reg = <0x30820000 0x10000>;
 				interrupts = <GIC_SPI 31 IRQ_TYPE_LEVEL_HIGH>;
 				clocks = <&clk IMX8MQ_CLK_ECSPI1_ROOT>,
 					 <&clk IMX8MQ_CLK_ECSPI1_ROOT>;
@@ -909,7 +902,7 @@
 			sai2: sai@308b0000 {
 				compatible = "fsl,imx8mq-sai",
 					     "fsl,imx6sx-sai";
-				reg = <0x0 0x308b0000 0x0 0x10000>;
+				reg = <0x308b0000 0x10000>;
 				interrupts = <GIC_SPI 96 IRQ_TYPE_LEVEL_HIGH>;
 				clocks = <&clk IMX8MQ_CLK_SAI2_IPG>,
 					<&clk IMX8MQ_CLK_DUMMY>,
@@ -924,7 +917,7 @@
 			sai3: sai@308c0000 {
 				compatible = "fsl,imx8mq-sai",
 					     "fsl,imx6sx-sai";
-				reg = <0x0 0x308c0000 0x0 0x10000>;
+				reg = <0x308c0000 0x10000>;
 				interrupts = <GIC_SPI 50 IRQ_TYPE_LEVEL_HIGH>;
 				clocks = <&clk IMX8MQ_CLK_SAI3_IPG>,
 					<&clk IMX8MQ_CLK_DUMMY>,

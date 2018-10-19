@@ -85,11 +85,16 @@
 		clock-output-names = "sound_osc";
 	};
 
+	mclk: mclk {
+		compatible = "fixed-clock";
+		#clock-cells = <0>;
+		clock-frequency = <26000000>;
+		clock-output-names = "mclk";
+	};
+
 	sound {
 		compatible = "simple-audio-card";
 		simple-audio-card,name = "sgtl5000-audio";
-		pinctrl-names = "default";
-		pinctrl-0 = <&pinctrl_sai2>;
 		simple-audio-card,format = "i2s";
 		simple-audio-card,bitclock-master = <&codec_dai>;
 		simple-audio-card,frame-master = <&codec_dai>;
@@ -154,6 +159,7 @@
 			gpios = <&gpio1 13 GPIO_ACTIVE_HIGH>;
 			default-state = "off";
 		};
+
 	};
 
 	gpio-keys {
@@ -216,7 +222,7 @@
 
 		pinctrl_csi1: csi1grp {
 			fsl,pins = <
-				MX8MQ_IOMUXC_GPIO1_IO14_GPIO1_IO14		0x19
+				MX8MQ_IOMUXC_GPIO1_IO14_CCMSRCGPCMIX_CLKO1	0x19  /* CLK01 */
 			>;
 		};
 
@@ -279,8 +285,6 @@
 			fsl,pins = <
 				MX8MQ_IOMUXC_I2C3_SCL_I2C3_SCL			0x4000007f
 				MX8MQ_IOMUXC_I2C3_SDA_I2C3_SDA			0x4000007f
-				MX8MQ_IOMUXC_NAND_DATA02_GPIO3_IO8		0x17059	/* TOUCH INT */
-				MX8MQ_IOMUXC_NAND_DATA03_GPIO3_IO9		0x16	/* TOUCH RST */
 			>;
 		};
 
@@ -1019,6 +1023,7 @@
 &sai2 {
 	pinctrl-names = "default";
 	pinctrl-0 = <&pinctrl_sai2>;
+	#sound-dai-cells = <0>;
 
 	clocks = <&clk IMX8MQ_CLK_SAI2_IPG>;
 	clock-names = "bus";
@@ -1027,11 +1032,14 @@
 	status = "okay";
 };
 
-&sai4 {
+&sai5 {
+	pinctrl-names = "default";
+	pinctrl-0 = <&pinctrl_sai5>;
 	assigned-clocks = <&clk IMX8MQ_CLK_SAI4_SRC>,
 			<&clk IMX8MQ_CLK_SAI4_DIV>;
 	assigned-clock-parents = <&clk IMX8MQ_AUDIO_PLL1_OUT>;
 	assigned-clock-rates = <0>, <24576000>;
+	
 	status = "okay";
 };
 
@@ -1043,6 +1051,7 @@
 			<&clk IMX8MQ_CLK_SAI6_DIV>;
 	assigned-clock-parents = <&clk IMX8MQ_AUDIO_PLL1_OUT>;
 	assigned-clock-rates = <0>, <24576000>;
+
 	status = "okay";
 };
 
