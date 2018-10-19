@@ -192,6 +192,15 @@
 		};
 	};
 
+	pwmleds {
+                compatible = "pwm-leds";
+                haptic {
+                        label = "nxp::haptic";
+                	pwms = <&pwm2 0 200000>;
+                        max-brightness = <255>;
+                };
+        };
+
 	gpio-keys {
 		compatible = "gpio-keys";
 		pinctrl-names = "default";
@@ -531,7 +540,7 @@
 
 		pinctrl_haptic: hapticgrp {
 			fsl,pins = <
-				MX8MQ_IOMUXC_SPDIF_RX_GPIO5_IO4 	0xc6  /* nHAPTIC */
+				MX8MQ_IOMUXC_SPDIF_RX_PWM2_OUT 		0xc6  /* nHAPTIC */
 			>;
 		};
 
