@@ -163,13 +163,13 @@
 		csi_nrst {
 			label = "CSI_nRST";
 			gpios = <&gpio1 6 GPIO_ACTIVE_HIGH>;
-			default-state = "off";
+			default-state = "on";
 		};
 
 		csi_pdwn {
 			label = "CSI_PDWN";
 			gpios = <&gpio1 7 GPIO_ACTIVE_HIGH>;
-			default-state = "on";
+			default-state = "off";
 		};
 	};
 
@@ -888,7 +888,7 @@
 
 	ov5640_mipi: ov5640_mipi@3c {
 		compatible = "ovti,ov5640_mipi";
-		reg = <0x3c>;
+		reg = <0x78>;
 		status = "okay";
 		pinctrl-names = "default";
 		pinctrl-0 = <&pinctrl_csi1>;
@@ -926,7 +926,7 @@
 		reg = <0x0a>;
 		// VDDA-supply = <&reg_2v5>;
 		// VDDIO-supply = <&reg_3v3>;
-		clocks = <&mclk>;
+		clocks = <&sound_osc>;
 	};
 
 };
