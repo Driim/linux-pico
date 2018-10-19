@@ -66,6 +66,25 @@
 			enable-active-high;
 			regulator-always-on;
 		};
+
+		wifi_pwr_en: wifi_en {
+			compatible = "regulator-fixed";
+			regulator-name = "WIFI_EN";
+			regulator-min-microvolt = <3300000>;
+			regulator-max-microvolt = <3300000>;
+			gpio = <&gpio3 5 GPIO_ACTIVE_HIGH>;
+			enable-active-high;
+			regulator-always-on;
+		};
+		
+		bt_pwr_en: bt_en {
+			compatible = "regulator-fixed";
+			regulator-name = "BT_EN";
+			regulator-min-microvolt = <3300000>;
+			regulator-max-microvolt = <3300000>;
+			gpio = <&gpio3 11 GPIO_ACTIVE_HIGH>;
+			enable-active-high;
+		};
 	};
 
 	modem_reset: modem_reset {
@@ -976,7 +995,15 @@
 	bus-width = <4>;
 	cd-gpios = <&gpio2 12 GPIO_ACTIVE_LOW>;
 	vmmc-supply = <&reg_usdhc2_vmmc>;
-	power-supply = <&reg_pwr_en>;
+	power-supply = <&wifi_pwr_en>;
+
+	non-removable;
+	cd-post;
+	pm-ignore-notify;
+	keep-power-in-suspend;
+	enable-sdio-wakeup;
+	needs-special-hs-handling;
+	wifi-host;
 	status = "okay";
 };
 
