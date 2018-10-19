@@ -197,6 +197,7 @@
                 haptic {
                         label = "nxp::haptic";
                 	pwms = <&pwm2 0 200000>;
+			active-low;
                         max-brightness = <255>;
                 };
         };
