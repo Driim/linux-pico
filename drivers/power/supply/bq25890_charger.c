@@ -469,11 +469,6 @@ static int bq25890_power_supply_get_property(struct power_supply *psy,
 		break;
 
 	case POWER_SUPPLY_PROP_VOLTAGE_NOW:
-		if (!state.online) {
-			val->intval = 0;
-			break;
-		}
-
 		ret = bq25890_field_read(bq, F_SYSV); /* read measured value */
 		if (ret < 0)
 			return ret;
