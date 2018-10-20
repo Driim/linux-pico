@@ -240,11 +240,13 @@
 
 
 &clk {
-	assigned-clocks = <&clk IMX8MQ_AUDIO_PLL1>;
-	assigned-clock-rates = <786432000>;
+	assigned-clocks = <&clk IMX8MQ_AUDIO_PLL1>, <&clk IMX8MQ_CLK_CLKO1_DIV>;
+	assigned-clock-rates = <786432000>, <2000000>;
 };
 
 &iomuxc {
+	pinctrl-names = "default";
+	pinctrl-0 = <&pinctrl_csi1>;
 
 	imx8m-som {
 		pinctrl_nc: ncgrp {
@@ -669,7 +671,7 @@
 		compatible = "rohm,bd71837";
 		/* PMIC BD71837 PMIC_nINT GPIO1_IO12 */
 		//pinctrl-0 = <&pinctrl_pmic>;
-		//gpio_intr = <&gpio1 12 GPIO_ACTIVE_LOW>;
+		gpio_intr = <&gpio1 12 GPIO_ACTIVE_LOW>;
 
 		bd71837,pmic-buck1-uses-i2c-dvs;
 		bd71837,pmic-buck1-dvs-voltage = <900000>, <850000>, <800000>; /* VDD_SOC: Run-Idle-Suspend */
@@ -891,16 +893,6 @@
 		interrupt-parent = <&gpio4>;
 		interrupts = <29 IRQ_TYPE_LEVEL_LOW>;
         };
-
-#if 0
-#endif
-
-	nau8820_codec: nau8820@1a {
-		#sound-dai-cells = <0>;
-		compatible = "nau8820";
-		reg = <0x1a>;
-		clocks = <&sound_osc 0>;
-	};
 };
 
 &i2c2 {
@@ -913,7 +905,7 @@
 &i2c3 {
 	clock-frequency = <100000>;
 	pinctrl-names = "default";
-	pinctrl-0 = <&pinctrl_i2c3>, <&pinctrl_csi1>;
+	pinctrl-0 = <&pinctrl_i2c3>;
 	status = "okay";
 
 	ov5640_mipi: ov5640_mipi@3c {
@@ -952,7 +944,7 @@
 		compatible = "fsl,sgtl5000";
 		#sound-dai-cells = <0>;
 		reg = <0x0a>;
-		clocks = <&sound_osc>;
+		clocks = <&sound_osc 0>;
 	};
 
 };
@@ -1071,19 +1063,19 @@
 	pinctrl-names = "default";
 	pinctrl-0 = <&pinctrl_sai2>;
 	#sound-dai-cells = <0>;
+	assigned-clocks = <&clk IMX8MQ_CLK_SAI2_SRC>,
+			<&clk IMX8MQ_CLK_SAI2_DIV>;
+	assigned-clock-parents = <&clk IMX8MQ_AUDIO_PLL1_OUT>;
+	assigned-clock-rates = <0>, <24576000>;
 
-	clocks = <&clk IMX8MQ_CLK_SAI2_IPG>;
-	clock-names = "bus";
-
-	/* power-supply = <&reg_pwr_en>; */
 	status = "okay";
 };
 
 &sai5 {
 	pinctrl-names = "default";
 	pinctrl-0 = <&pinctrl_sai5>;
-	assigned-clocks = <&clk IMX8MQ_CLK_SAI4_SRC>,
-			<&clk IMX8MQ_CLK_SAI4_DIV>;
+	assigned-clocks = <&clk IMX8MQ_CLK_SAI5_SRC>,
+			<&clk IMX8MQ_CLK_SAI5_DIV>;
 	assigned-clock-parents = <&clk IMX8MQ_AUDIO_PLL1_OUT>;
 	assigned-clock-rates = <0>, <24576000>;
 	

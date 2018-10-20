@@ -838,6 +838,10 @@ static void __init imx8mq_clocks_init(struct device_node *ccm_node)
 	clk_data.clk_num = ARRAY_SIZE(clks);
 	of_clk_add_provider(np, of_clk_src_onecell_get, &clk_data);
 
+	/* enable all the clocks just for bringup */
+	for (i = 0; i < ARRAY_SIZE(clks_init_on);  i++)
+		clk_prepare_enable(clks[clks_init_on[i]]);
+	
 	clk_set_parent(clks[IMX8MQ_VIDEO2_PLL1_OUT], clks[IMX8MQ_VIDEO2_PLL1]);
 	clk_set_parent(clks[IMX8MQ_VIDEO2_PLL2_OUT], clks[IMX8MQ_VIDEO2_PLL2_DIV]);
 
@@ -864,6 +868,17 @@ static void __init imx8mq_clocks_init(struct device_node *ccm_node)
 	clk_set_parent(clks[IMX8MQ_CLK_CSI2_CORE_SRC], clks[IMX8MQ_SYS1_PLL_266M]);
 	clk_set_parent(clks[IMX8MQ_CLK_CSI2_PHY_REF_SRC], clks[IMX8MQ_SYS2_PLL_1000M]);
 	clk_set_parent(clks[IMX8MQ_CLK_CSI2_ESC_SRC], clks[IMX8MQ_SYS1_PLL_800M]);
+
+	clk_set_parent(clks[IMX8MQ_AUDIO_PLL1_OUT], clks[IMX8MQ_AUDIO_PLL1]);
+	clk_set_parent(clks[IMX8MQ_AUDIO_PLL2_OUT], clks[IMX8MQ_AUDIO_PLL2]);
+
+	clk_set_parent(clks[IMX8MQ_CLK_CLKO1_SRC], clks[IMX8MQ_CLK_27M]);
+	//clk_set_parent(clks[IMX8MQ_AUDIO_PLL1_REF_SEL], clks[IMX8MQ_CLK_27M]);
+	//clk_set_parent(clks[IMX8MQ_AUDIO_PLL1_OUT], clks[IMX8MQ_CLK_27M]);
+	//clk_set_rate(clks[IMX8MQ_AUDIO_PLL1], 593999999);
+	clk_set_parent(clks[IMX8MQ_CLK_SAI2_SRC], clks[IMX8MQ_AUDIO_PLL1_OUT]);
+	clk_set_parent(clks[IMX8MQ_CLK_SAI5_SRC], clks[IMX8MQ_AUDIO_PLL1_OUT]);
+	clk_set_parent(clks[IMX8MQ_CLK_SAI6_SRC], clks[IMX8MQ_AUDIO_PLL1_OUT]);
 
 	pr_err("i.MX8MQ clock driver init done\n");
 }
