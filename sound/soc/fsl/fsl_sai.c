@@ -837,9 +837,6 @@ static int fsl_sai_probe(struct platform_device *pdev)
 		}
 	}
 
-	clk_prepare_enable( sai->mclk_clk[0] );
-	clk_prepare_enable( sai->mclk_clk[1] );
-
 	irq = platform_get_irq(pdev, 0);
 	if (irq < 0) {
 		dev_err(&pdev->dev, "no irq for node %s\n", pdev->name);
