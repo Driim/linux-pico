@@ -111,12 +111,42 @@
 		clock-output-names = "mclk";
 	};
 
+        sound {
+                compatible = "simple-audio-card";
+		simple-audio-card,name = "sgtl5000";
+                simple-audio-card,format = "i2s";
+                simple-audio-card,widgets =
+                        "Microphone", "Microphone Jack",
+                        "Headphone", "Headphone Jack",
+                        "Speaker", "Speaker Ext",
+                        "Line", "Line In Jack";
+                simple-audio-card,routing =
+                        "MIC_IN", "Microphone Jack",
+                        "Microphone Jack", "Mic Bias",
+                        "LINE_IN", "Line In Jack",
+                        "Headphone Jack", "HP_OUT",
+                        "Speaker Ext", "LINE_OUT";
+
+                simple-audio-card,cpu {
+                        sound-dai = <&sai2>;
+                };
+
+                simple-audio-card,codec {
+                        sound-dai = <&sgtl5000>;
+                        frame-master;
+                        bitclock-master;
+			clocks = <&clk IMX8MQ_CLK_SAI2_DIV>;
+                        system-clock-frequency = <24576000>;
+                };
+        };
+
+#if 0
 	sound {
-		compatible = "simple-audio-card";
+		compatible = "fsl,imx-audio-sgtl5000";
 		simple-audio-card,name = "sgtl5000-audio";
 		simple-audio-card,format = "i2s";
-		simple-audio-card,bitclock-master = <&codec_dai>;
-		simple-audio-card,frame-master = <&codec_dai>;
+		//simple-audio-card,bitclock-master = <&codec_dai>;
+		//simple-audio-card,frame-master = <&codec_dai>;
 		simple-audio-card,widgets =
 			"Microphone", "Mic Jack",
 			"Line", "Line In",
@@ -126,6 +156,8 @@
 			"MIC_IN", "Mic Jack",
 			"Mic Jack", "Mic Bias",
 			"Headphone Jack", "HP_OUT";
+	        //ssi-controller = <&sai2>;
+		//audio-codec = <&sgtl5000>;
 
 		cpu_dai: simple-audio-card,cpu {
 			sound-dai = <&sai2>;
@@ -135,6 +167,7 @@
 			sound-dai = <&sgtl5000>;
 		};
 	};
+#endif
 #if TODO
 	sound-nau8820 {
 		compatible = "fsl,imx-audio-wm8985";
@@ -170,7 +203,7 @@
 	leds {
 		compatible = "gpio-leds";
 		pinctrl-names = "default";
-		pinctrl-0 = <&pinctrl_gpio_leds>;
+		pinctrl-0 = <&pinctrl_gpio_leds>, <&pinctrl_mute>, <&pinctrl_micsel>;
 		status = "okay";
 
 		led1 {
@@ -189,6 +222,18 @@
 			label = "CSI_PDWN";
 			gpios = <&gpio1 7 GPIO_ACTIVE_HIGH>;
 			default-state = "off";
+		};
+		
+		spk_mute {
+			label = "SPK_MUTE";
+			gpios = <&gpio5 3 GPIO_ACTIVE_LOW>;
+			default-state = "off";
+		};
+		
+		mike_sel {
+			label = "MIC_SEL";
+			gpios = <&gpio5 5 GPIO_ACTIVE_HIGH>;
+			default-state = "on";
 		};
 	};
 
@@ -942,9 +987,14 @@
 
 	sgtl5000: sgtl5000@a {
 		compatible = "fsl,sgtl5000";
+		clocks = <&clk IMX8MQ_CLK_SAI2_DIV>;
+		// <&clk IMX8MQ_CLK_SAI2_ROOT>
+		clock-names = "mclk";
 		#sound-dai-cells = <0>;
 		reg = <0x0a>;
-		clocks = <&sound_osc 0>;
+		VDDD-supply = <&buck7_reg>;
+		VDDIO-supply = <&ldo3_reg>;
+		VDDA-supply = <&ldo3_reg>;
 	};
 
 };
