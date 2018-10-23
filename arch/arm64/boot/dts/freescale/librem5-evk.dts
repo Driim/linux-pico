@@ -140,42 +140,7 @@
                 };
         };
 
-#if 0
-	sound {
-		compatible = "fsl,imx-audio-sgtl5000";
-		simple-audio-card,name = "sgtl5000-audio";
-		simple-audio-card,format = "i2s";
-		//simple-audio-card,bitclock-master = <&codec_dai>;
-		//simple-audio-card,frame-master = <&codec_dai>;
-		simple-audio-card,widgets =
-			"Microphone", "Mic Jack",
-			"Line", "Line In",
-			"Line", "Line Out",
-			"Headphone", "Headphone Jack";
-		simple-audio-card,routing =
-			"MIC_IN", "Mic Jack",
-			"Mic Jack", "Mic Bias",
-			"Headphone Jack", "HP_OUT";
-	        //ssi-controller = <&sai2>;
-		//audio-codec = <&sgtl5000>;
-
-		cpu_dai: simple-audio-card,cpu {
-			sound-dai = <&sai2>;
-		};
-
-		codec_dai: simple-audio-card,codec {
-			sound-dai = <&sgtl5000>;
-		};
-	};
-#endif
 #if TODO
-	sound-nau8820 {
-		compatible = "fsl,imx-audio-wm8985";
-		model = "nau8820-audio";
-		audio-cpu = <&sai2>;
-		audio-codec = <&nau8820_codec>;
-	};
-
 	sound-hdmi {
 		compatible = "fsl,imx-audio-cdnhdmi";
 		model = "imx-audio-hdmi";
