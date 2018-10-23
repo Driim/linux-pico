@@ -86,6 +86,14 @@ struct snd_dmaengine_dai_dma_data {
 	unsigned int flags;
 };
 
+struct dmaengine_pcm_runtime_data {
+	struct dma_chan *dma_chan;
+	dma_cookie_t cookie;
+
+	unsigned int pos;
+//	dma_async_tx_callback callback;
+};
+
 void snd_dmaengine_pcm_set_config_from_dai_data(
 	const struct snd_pcm_substream *substream,
 	const struct snd_dmaengine_dai_dma_data *dma_data,

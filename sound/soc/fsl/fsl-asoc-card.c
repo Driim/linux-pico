@@ -27,6 +27,7 @@
 #include "../codecs/sgtl5000.h"
 #include "../codecs/wm8962.h"
 #include "../codecs/wm8960.h"
+#include "../codecs/wm8985.h"
 
 #define CS427x_SYSCLK_MCLK 0
 
@@ -49,6 +50,7 @@ struct codec_priv {
 	u32 mclk_id;
 	u32 fll_id;
 	u32 pll_id;
+	int *lrclk_divs;
 };
 
 /**
@@ -91,9 +93,9 @@ struct fsl_asoc_card_priv {
 	struct cpu_priv cpu_priv;
 	struct snd_soc_card card;
 	u32 sample_rate;
-	snd_pcm_format_t sample_format;
+	u32 sample_format;
 	u32 asrc_rate;
-	snd_pcm_format_t asrc_format;
+	u32 asrc_format;
 	u32 dai_fmt;
 	char name[32];
 };
@@ -139,6 +141,8 @@ static bool fsl_asoc_card_is_ac97(struct fsl_asoc_card_priv *priv)
 	return priv->dai_fmt == SND_SOC_DAIFMT_AC97;
 }
 
+static u32 wm8985_lrc_divs[] = { 128, 192, 256, 384, 512, 768, 1024, 1536, 0 };
+
 static int fsl_asoc_card_hw_params(struct snd_pcm_substream *substream,
 				   struct snd_pcm_hw_params *params)
 {
@@ -166,7 +170,7 @@ static int fsl_asoc_card_hw_params(struct snd_pcm_substream *substream,
 	ret = snd_soc_dai_set_sysclk(rtd->cpu_dai, cpu_priv->sysclk_id[tx],
 				     cpu_priv->sysclk_freq[tx],
 				     cpu_priv->sysclk_dir[tx]);
-	if (ret && ret != -ENOTSUPP) {
+	if (ret) {
 		dev_err(dev, "failed to set sysclk for cpu dai\n");
 		return ret;
 	}
@@ -174,7 +178,7 @@ static int fsl_asoc_card_hw_params(struct snd_pcm_substream *substream,
 	if (cpu_priv->slot_width) {
 		ret = snd_soc_dai_set_tdm_slot(rtd->cpu_dai, 0x3, 0x3, 2,
 					       cpu_priv->slot_width);
-		if (ret && ret != -ENOTSUPP) {
+		if (ret) {
 			dev_err(dev, "failed to set TDM slot for cpu dai\n");
 			return ret;
 		}
@@ -183,7 +187,7 @@ static int fsl_asoc_card_hw_params(struct snd_pcm_substream *substream,
 	return 0;
 }
 
-static const struct snd_soc_ops fsl_asoc_card_ops = {
+static struct snd_soc_ops fsl_asoc_card_ops = {
 	.hw_params = fsl_asoc_card_hw_params,
 };
 
@@ -199,7 +203,7 @@ static int be_hw_params_fixup(struct snd_soc_pcm_runtime *rtd,
 
 	mask = hw_param_mask(params, SNDRV_PCM_HW_PARAM_FORMAT);
 	snd_mask_none(mask);
-	snd_mask_set(mask, (__force int)priv->asrc_format);
+	snd_mask_set(mask, priv->asrc_format);
 
 	return 0;
 }
@@ -243,7 +247,8 @@ static int fsl_asoc_card_set_bias_level(struct snd_soc_card *card,
 	struct codec_priv *codec_priv = &priv->codec_priv;
 	struct device *dev = card->dev;
 	unsigned int pll_out;
-	int ret;
+	int ret = 0;
+	int i;
 
 	rtd = snd_soc_get_pcm_runtime(card, card->dai_link[0].name);
 	codec_dai = rtd->codec_dai;
@@ -255,14 +260,29 @@ static int fsl_asoc_card_set_bias_level(struct snd_soc_card *card,
 		if (dapm->bias_level != SND_SOC_BIAS_STANDBY)
 			break;
 
-		if (priv->sample_format == SNDRV_PCM_FORMAT_S24_LE)
-			pll_out = priv->sample_rate * 384;
-		else
-			pll_out = priv->sample_rate * 256;
+		if (codec_priv->lrclk_divs != NULL) {
+			for (i = 0; codec_priv->lrclk_divs[i] != 0; i ++) {
+				pll_out = priv->sample_rate * codec_priv->lrclk_divs[i];
+				ret = snd_soc_dai_set_pll(codec_dai, codec_priv->pll_id,
+							  codec_priv->mclk_id,
+							  codec_priv->mclk_freq, pll_out);
+				if (ret == 0) {
+					break;
+				}
+			}
+		} else {
+			if (priv->sample_format == SNDRV_PCM_FORMAT_S24_LE) {
+				pll_out = priv->sample_rate * 384;
+			} else {
+				pll_out = priv->sample_rate * 256;
+			}
 
-		ret = snd_soc_dai_set_pll(codec_dai, codec_priv->pll_id,
-					  codec_priv->mclk_id,
-					  codec_priv->mclk_freq, pll_out);
+			ret = snd_soc_dai_set_pll(codec_dai, codec_priv->pll_id,
+						  codec_priv->mclk_id,
+						  codec_priv->mclk_freq, pll_out);
+
+		}
+
 		if (ret) {
 			dev_err(dev, "failed to start FLL: %d\n", ret);
 			return ret;
@@ -270,7 +290,7 @@ static int fsl_asoc_card_set_bias_level(struct snd_soc_card *card,
 
 		ret = snd_soc_dai_set_sysclk(codec_dai, codec_priv->fll_id,
 					     pll_out, SND_SOC_CLOCK_IN);
-		if (ret && ret != -ENOTSUPP) {
+		if (ret) {
 			dev_err(dev, "failed to set SYSCLK: %d\n", ret);
 			return ret;
 		}
@@ -283,7 +303,7 @@ static int fsl_asoc_card_set_bias_level(struct snd_soc_card *card,
 		ret = snd_soc_dai_set_sysclk(codec_dai, codec_priv->mclk_id,
 					     codec_priv->mclk_freq,
 					     SND_SOC_CLOCK_IN);
-		if (ret && ret != -ENOTSUPP) {
+		if (ret) {
 			dev_err(dev, "failed to switch away from FLL: %d\n", ret);
 			return ret;
 		}
@@ -442,8 +462,8 @@ static int fsl_asoc_card_late_probe(struct snd_soc_card *card)
 
 	if (fsl_asoc_card_is_ac97(priv)) {
 #if IS_ENABLED(CONFIG_SND_AC97_CODEC)
-		struct snd_soc_component *component = rtd->codec_dai->component;
-		struct snd_ac97 *ac97 = snd_soc_component_get_drvdata(component);
+		struct snd_soc_codec *codec = rtd->codec;
+		struct snd_ac97 *ac97 = snd_soc_codec_get_drvdata(codec);
 
 		/*
 		 * Use slots 3/4 for S/PDIF so SSI won't try to enable
@@ -459,7 +479,7 @@ static int fsl_asoc_card_late_probe(struct snd_soc_card *card)
 
 	ret = snd_soc_dai_set_sysclk(codec_dai, codec_priv->mclk_id,
 				     codec_priv->mclk_freq, SND_SOC_CLOCK_IN);
-	if (ret && ret != -ENOTSUPP) {
+	if (ret) {
 		dev_err(dev, "failed to set sysclk in %s\n", __func__);
 		return ret;
 	}
@@ -562,6 +582,24 @@ static int fsl_asoc_card_probe(struct platform_device *pdev)
 		codec_dai_name = "ac97-hifi";
 		priv->card.set_bias_level = NULL;
 		priv->dai_fmt = SND_SOC_DAIFMT_AC97;
+	} else if (of_device_is_compatible(np, "fsl,imx-audio-wm8985")) {
+		/* wm8985 codec can generate bclk and lrclk in such a way
+		   that the bclk/lrclk ratio is always a power of 2.
+		   Use DSP_A base format since FSL SAI
+		   doesn't propelry generate data in I2S format when
+		   bclk/lrclk is not equal to the frame size, that happends
+		   when frame size is not a power of 2 in case of wm8985 codec.
+		*/
+		codec_dai_name = "wm8985";
+		if (strstr(cpu_np->name, "sai"))
+			priv->dai_fmt =
+				(SND_SOC_DAIFMT_DSP_A | SND_SOC_DAIFMT_NB_NF);
+		priv->card.set_bias_level = fsl_asoc_card_set_bias_level;
+		priv->codec_priv.mclk_id = WM8985_CLKSRC_MCLK;
+		priv->codec_priv.fll_id = WM8985_CLKSRC_PLL;
+		priv->codec_priv.pll_id = WM8985_CLKSRC_PLL;
+		priv->dai_fmt |= SND_SOC_DAIFMT_CBM_CFM;
+		priv->codec_priv.lrclk_divs = wm8985_lrc_divs;
 	} else {
 		dev_err(&pdev->dev, "unknown Device Tree compatible\n");
 		ret = -EINVAL;
@@ -599,12 +637,14 @@ static int fsl_asoc_card_probe(struct platform_device *pdev)
 	priv->card.dev = &pdev->dev;
 	priv->card.name = priv->name;
 	priv->card.dai_link = priv->dai_link;
-	priv->card.dapm_routes = fsl_asoc_card_is_ac97(priv) ?
-				 audio_map_ac97 : audio_map;
 	priv->card.late_probe = fsl_asoc_card_late_probe;
-	priv->card.num_dapm_routes = ARRAY_SIZE(audio_map);
-	priv->card.dapm_widgets = fsl_asoc_card_dapm_widgets;
-	priv->card.num_dapm_widgets = ARRAY_SIZE(fsl_asoc_card_dapm_widgets);
+	if (asrc_pdev) {
+		priv->card.dapm_routes = fsl_asoc_card_is_ac97(priv) ?
+			audio_map_ac97 : audio_map;
+		priv->card.num_dapm_routes = ARRAY_SIZE(audio_map);
+		priv->card.dapm_widgets = fsl_asoc_card_dapm_widgets;
+		priv->card.num_dapm_widgets = ARRAY_SIZE(fsl_asoc_card_dapm_widgets);
+	}
 
 	/* Drop the second half of DAPM routes -- ASRC */
 	if (!asrc_pdev)
@@ -613,10 +653,12 @@ static int fsl_asoc_card_probe(struct platform_device *pdev)
 	memcpy(priv->dai_link, fsl_asoc_card_dai,
 	       sizeof(struct snd_soc_dai_link) * ARRAY_SIZE(priv->dai_link));
 
-	ret = snd_soc_of_parse_audio_routing(&priv->card, "audio-routing");
-	if (ret) {
-		dev_err(&pdev->dev, "failed to parse audio-routing: %d\n", ret);
-		goto asrc_fail;
+	if (asrc_pdev) {
+		ret = snd_soc_of_parse_audio_routing(&priv->card, "audio-routing");
+		if (ret) {
+			dev_err(&pdev->dev, "failed to parse audio-routing: %d\n", ret);
+			goto asrc_fail;
+		}
 	}
 
 	/* Normal DAI Link */
@@ -639,10 +681,6 @@ static int fsl_asoc_card_probe(struct platform_device *pdev)
 				devm_kasprintf(&pdev->dev, GFP_KERNEL,
 					       "ac97-codec.%u",
 					       (unsigned int)idx);
-		if (!priv->dai_link[0].codec_name) {
-			ret = -ENOMEM;
-			goto asrc_fail;
-		}
 	}
 
 	priv->dai_link[0].platform_of_node = cpu_np;
@@ -706,6 +744,7 @@ static const struct of_device_id fsl_asoc_card_dt_ids[] = {
 	{ .compatible = "fsl,imx-audio-sgtl5000", },
 	{ .compatible = "fsl,imx-audio-wm8962", },
 	{ .compatible = "fsl,imx-audio-wm8960", },
+	{ .compatible = "fsl,imx-audio-wm8985", },
 	{}
 };
 MODULE_DEVICE_TABLE(of, fsl_asoc_card_dt_ids);
