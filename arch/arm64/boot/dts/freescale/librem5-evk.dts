@@ -135,8 +135,6 @@
                         sound-dai = <&sgtl5000>;
                         frame-master;
                         bitclock-master;
-			clocks = <&clk IMX8MQ_CLK_SAI2_DIV>;
-                        system-clock-frequency = <24576000>;
                 };
         };
 
