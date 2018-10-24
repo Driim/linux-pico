@@ -193,9 +193,9 @@
 			default-state = "off";
 		};
 		
-		mike_sel {
+		mic_sel {
 			label = "MIC_SEL";
-			gpios = <&gpio5 5 GPIO_ACTIVE_HIGH>;
+ 			gpios = <&gpio5 5 GPIO_ACTIVE_LOW>;
 			default-state = "on";
 		};
 	};
