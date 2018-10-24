@@ -824,12 +824,12 @@ static ssize_t nwl_dsi_host_transfer(struct mipi_dsi_host *host,
 	/* Initiate the DSI packet transmision */
 	nwl_dsi_begin_transmission(dsi);
 
-	wait_for_completion_timeout(&xfer.completed, MIPI_FIFO_TIMEOUT);
-
-	ret = xfer.status;
-	if (xfer.status == -ETIMEDOUT)
-		DRM_DEV_ERROR(host->dev, "[%02X] DSI transfer timed out\n",
-			xfer.cmd);
+	if (!wait_for_completion_timeout(&xfer.completed, MIPI_FIFO_TIMEOUT)) {
+		DRM_DEV_ERROR(host->dev, "[%02X] DSI transfer timed out\n", xfer.cmd);
+		ret = -ETIMEDOUT;
+	} else {
+		ret = xfer.status;
+	}
 
 	nwl_dsi_disable_clocks(dsi, CLK_RX_ESC);
 
