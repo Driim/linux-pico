@@ -459,6 +459,34 @@ irqreturn_t tcpci_irq(struct tcpci *tcpci)
 	else if (status & TCPC_ALERT_TX_FAILED)
 		tcpm_pd_transmit_complete(tcpci->port, TCPC_TX_FAILED);
 
+	if (status & TCPC_ALERT_FAULT) {
+		u16 fault;
+
+		tcpci_read16(tcpci, TCPC_FAULT_STATUS, &fault);
+
+		dev_dbg(tcpci->dev, "TCPC fault status 0x%x\n", fault );
+
+		if(fault & TCPC_FAULT_STATUS_RST_DEFAULT)
+			dev_warn(tcpci->dev, "TCPC fault - All Registers Reset To Default\n" );
+		else if(fault & TCPC_FAULT_STATUS_FORCE_VBUS_OFF)
+			dev_err(tcpci->dev, "TCPC fault - Force Off VBUS Status\n" );
+		else if(fault & TCPC_FAULT_STATUS_AUTO_DISCHARGE)
+			dev_err(tcpci->dev, "TCPC fault - Auto Discharge Failed\n" );
+		else if(fault & TCPC_FAULT_STATUS_FORCE_DISCHARGE)
+			dev_err(tcpci->dev, "TCPC fault - Force Discharge Failed\n" );
+		else if(fault & TCPC_FAULT_STATUS_VBUS_OVERCURRENT)
+			dev_err(tcpci->dev, "TCPC fault - Internal or External VBUS Over Current Protection Fault\n" );
+		else if(fault & TCPC_FAULT_STATUS_VBUS_OVERVOLTAGE)
+			dev_err(tcpci->dev, "TCPC fault - Internal or External VBUS Over Voltage Protection Fault\n" );
+		else if(fault & TCPC_FAULT_STATUS_VCONN_OVERCURRENT)
+			dev_err(tcpci->dev, "TCPC fault - VCONN Over Current Fault\n" );
+		else if(fault & TCPC_FAULT_STATUS_I2C_ERROR)
+			dev_err(tcpci->dev, "TCPC fault - I2C Interface Error\n" );
+
+		/* clear the fault */
+		tcpci_write16(tcpci, TCPC_FAULT_STATUS, fault);
+	}
+
 	return IRQ_HANDLED;
 }
 EXPORT_SYMBOL_GPL(tcpci_irq);
