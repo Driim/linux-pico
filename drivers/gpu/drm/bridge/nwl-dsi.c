@@ -715,8 +715,10 @@ static void nwl_dsi_finish_transmission(struct nwl_mipi_dsi *dsi, u32 status)
 	if (xfer->direction == DSI_PACKET_SEND && status & TX_PKT_DONE) {
 		xfer->status = xfer->tx_len;
 		end_packet = true;
-	} else if (status & DPHY_DIRECTION && status & RX_PKT_HDR_RCVD)
+	} else if (status & DPHY_DIRECTION &&
+		   ((status & RX_PKT_HDR_RCVD) || (status & RX_PKT_PAYLOAD_DATA_RCVD))) {
 		end_packet = nwl_dsi_read_packet(dsi, status);
+	}
 
 	if (end_packet)
 		complete(&xfer->completed);
