@@ -28,9 +28,13 @@ config SOC_IMX8MQ
 	select SRAM
 	select VIDEO_MX8_CAPTURE
 	select VIDEO_V4L2_SUBDEV_API
+	select DEVICE_THERMAL
 
 	help
 	  This enables support for the i.MX8MQ SoC.
+
+config DEVICE_THERMAL
+	bool
 
 config HAVE_IMX_MU
 	bool
