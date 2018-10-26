@@ -1270,7 +1270,8 @@
 &mipi_dsi_bridge {
 	status = "okay";
 	panel@0 {
-		compatible = "emcraft,frd55";
+		compatible = "rocktech,jh057n00900";
+		/* Virtual channel number */
 		reg = <0>;
 		port {
 			panel1_in: endpoint {
