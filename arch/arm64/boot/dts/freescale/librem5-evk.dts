@@ -1245,9 +1245,6 @@
 
 &mipi_dsi {
 	status = "okay";
-	pinctrl-names = "default";
-	pinctrl-0 = <&pinctrl_dsi>;
-	reset-gpios = <&gpio3 13 GPIO_ACTIVE_LOW>;
 
 	assigned-clocks = <&clk IMX8MQ_CLK_DSI_PHY_REF_SRC>,
 			  <&clk IMX8MQ_CLK_DSI_CORE_SRC>,
@@ -1274,6 +1271,9 @@
 		compatible = "rocktech,jh057n00900";
 		/* Virtual channel number */
 		reg = <0>;
+		pinctrl-names = "default";
+		pinctrl-0 = <&pinctrl_dsi>;
+		reset-gpios = <&gpio3 13 GPIO_ACTIVE_LOW>;
 		port {
 			panel1_in: endpoint {
 				remote-endpoint = <&mipi_dsi_bridge_out>;
