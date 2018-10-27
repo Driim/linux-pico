@@ -248,14 +248,11 @@
 
 
 &clk {
-	assigned-clocks = <&clk IMX8MQ_AUDIO_PLL1>, <&clk IMX8MQ_CLK_CLKO1_DIV>;
-	assigned-clock-rates = <786432000>, <2000000>;
+	assigned-clocks = <&clk IMX8MQ_AUDIO_PLL1>;
+	assigned-clock-rates = <786432000>;
 };
 
 &iomuxc {
-	pinctrl-names = "default";
-	pinctrl-0 = <&pinctrl_csi1>;
-
 	imx8m-som {
 		pinctrl_nc: ncgrp {
 			fsl,pins = <
@@ -922,15 +919,21 @@
 	status = "okay";
 
 	ov5640_mipi: ov5640_mipi@3c {
-		compatible = "ovti,ov5640_mipi";
-		reg = <0x78>;
+		compatible = "ovti,ov5640";
+		pinctrl-names = "default";
+		pinctrl-0 = <&pinctrl_csi1>;
+		// TODO : add these back in at some point
+/*
+                reset = <&gpio1 6 GPIO_ACTIVE_LOW>;
+                powerdown = <&gpio1 7 GPIO_ACTIVE_HIGH>;
+*/
+		reg = <0x3c>;
 		status = "okay";
 		clocks = <&clk IMX8MQ_CLK_CLKO1_DIV>;
-		clock-names = "csi_mclk";
-		assigned-clocks = <&clk IMX8MQ_CLK_CLKO1_SRC>,
-				  <&clk IMX8MQ_CLK_CLKO1_DIV>;
-		assigned-clock-parents = <&clk IMX8MQ_SYS1_PLL_200M>;
-		assigned-clock-rates = <0>, <20000000>;
+		clock-names = "xclk";
+		// TODO : need to change the parent clocks if we want 24Mhz
+		assigned-clocks = <&clk IMX8MQ_CLK_CLKO1_DIV>;
+		assigned-clock-rates = <12500000>;
 		csi_id = <0>;
 		pwn-gpios = <&gpio1 14 GPIO_ACTIVE_LOW>;
 		mclk = <20000000>;
@@ -1219,7 +1222,6 @@
 	};
 #endif
 };
-
 #ifdef USE_HDMI
 
 &hdmi {
@@ -1243,7 +1245,6 @@
 
 &mipi_dsi {
 	status = "okay";
-
 	pinctrl-names = "default";
 	pinctrl-0 = <&pinctrl_dsi>;
 	reset-gpios = <&gpio3 13 GPIO_ACTIVE_LOW>;
