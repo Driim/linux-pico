@@ -41,7 +41,7 @@
 #include <linux/slab.h>
 #include <linux/spinlock.h>
 #include <linux/videodev2.h>
-#include <media/v4l2-of.h>
+#include <media/v4l2-fwnode.h>
 #include <media/v4l2-subdev.h>
 #include <media/v4l2-device.h>
 
@@ -895,7 +895,7 @@ static int subdev_notifier_bound(struct v4l2_async_notifier *notifier,
 	struct csi_state *state = notifier_to_mipi_dev(notifier);
 
 	/* Find platform data for this sensor subdev */
-	if (state->asd.match.of.node == subdev->dev->of_node)
+	if (state->asd.match.fwnode == of_fwnode_handle(subdev->dev->of_node))
 		state->sensor_sd = subdev;
 
 	if (subdev == NULL)
@@ -945,6 +945,10 @@ static int mipi_csis_parse_dt(struct platform_device *pdev,
 static int mipi_csis_pm_resume(struct device *dev, bool runtime);
 static const struct of_device_id mipi_csis_of_match[];
 
+static const struct v4l2_async_notifier_operations subdev_notifier_ops = {
+	.bound = subdev_notifier_bound,
+};
+
 /* register parent dev */
 static int mipi_csis_subdev_host(struct csi_state *state)
 {
@@ -970,8 +974,8 @@ static int mipi_csis_subdev_host(struct csi_state *state)
 			return -1;
 		}
 
-		state->asd.match_type = V4L2_ASYNC_MATCH_OF;
-		state->asd.match.of.node = rem;
+		state->asd.match_type = V4L2_ASYNC_MATCH_FWNODE;
+		state->asd.match.fwnode = of_fwnode_handle(rem);
 		state->async_subdevs[0] = &state->asd;
 
 		of_node_put(rem);
@@ -980,7 +984,7 @@ static int mipi_csis_subdev_host(struct csi_state *state)
 
 	state->subdev_notifier.subdevs = state->async_subdevs;
 	state->subdev_notifier.num_subdevs = 1;
-	state->subdev_notifier.bound = subdev_notifier_bound;
+	state->subdev_notifier.ops = &subdev_notifier_ops;
 
 	ret = v4l2_async_notifier_register(&state->v4l2_dev,
 					&state->subdev_notifier);

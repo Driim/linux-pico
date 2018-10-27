@@ -37,6 +37,7 @@
 #include <linux/module.h>
 #include <linux/moduleparam.h>
 #include <linux/of.h>
+#include <linux/of_graph.h>
 #include <linux/of_device.h>
 #include <linux/platform_device.h>
 #include <linux/pm_runtime.h>
@@ -49,7 +50,7 @@
 #include <media/v4l2-dev.h>
 #include <media/v4l2-device.h>
 #include <media/v4l2-ioctl.h>
-#include <media/v4l2-of.h>
+#include <media/v4l2-fwnode.h>
 #include <media/videobuf2-core.h>
 #include <media/videobuf2-dma-contig.h>
 
@@ -1687,7 +1688,7 @@ static int subdev_notifier_bound(struct v4l2_async_notifier *notifier,
 	struct mx6s_csi_dev *csi_dev = notifier_to_mx6s_dev(notifier);
 
 	/* Find platform data for this sensor subdev */
-	if (csi_dev->asd.match.of.node == subdev->dev->of_node)
+	if (csi_dev->asd.match.fwnode == of_fwnode_handle(subdev->dev->of_node))
 		csi_dev->sd = subdev;
 
 	if (subdev == NULL)
@@ -1756,6 +1757,10 @@ static int mx6s_csi_two_8bit_sensor_mode_sel(struct mx6s_csi_dev *csi_dev)
 	return 0;
 }
 
+static const struct v4l2_async_notifier_operations subdev_notifier_ops = {
+	.bound = subdev_notifier_bound,
+};
+
 static int mx6sx_register_subdevs(struct mx6s_csi_dev *csi_dev)
 {
 	struct device_node *parent = csi_dev->dev->of_node;
@@ -1780,8 +1785,8 @@ static int mx6sx_register_subdevs(struct mx6s_csi_dev *csi_dev)
 			return -1;
 		}
 
-		csi_dev->asd.match_type = V4L2_ASYNC_MATCH_OF;
-		csi_dev->asd.match.of.node = rem;
+		csi_dev->asd.match_type = V4L2_ASYNC_MATCH_FWNODE;
+		csi_dev->asd.match.fwnode = of_fwnode_handle(rem);
 		csi_dev->async_subdevs[0] = &csi_dev->asd;
 
 		of_node_put(rem);
@@ -1790,7 +1795,7 @@ static int mx6sx_register_subdevs(struct mx6s_csi_dev *csi_dev)
 
 	csi_dev->subdev_notifier.subdevs = csi_dev->async_subdevs;
 	csi_dev->subdev_notifier.num_subdevs = 1;
-	csi_dev->subdev_notifier.bound = subdev_notifier_bound;
+	csi_dev->subdev_notifier.ops = &subdev_notifier_ops;
 
 	ret = v4l2_async_notifier_register(&csi_dev->v4l2_dev,
 					&csi_dev->subdev_notifier);
