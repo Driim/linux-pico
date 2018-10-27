@@ -872,7 +872,7 @@ static void __init imx8mq_clocks_init(struct device_node *ccm_node)
 	clk_set_parent(clks[IMX8MQ_AUDIO_PLL1_OUT], clks[IMX8MQ_AUDIO_PLL1]);
 	clk_set_parent(clks[IMX8MQ_AUDIO_PLL2_OUT], clks[IMX8MQ_AUDIO_PLL2]);
 
-	clk_set_parent(clks[IMX8MQ_CLK_CLKO1_SRC], clks[IMX8MQ_CLK_27M]);
+	//clk_set_parent(clks[IMX8MQ_CLK_CLKO1_SRC], clks[IMX8MQ_CLK_27M]);
 	//clk_set_parent(clks[IMX8MQ_AUDIO_PLL1_REF_SEL], clks[IMX8MQ_CLK_27M]);
 	//clk_set_parent(clks[IMX8MQ_AUDIO_PLL1_OUT], clks[IMX8MQ_CLK_27M]);
 	//clk_set_rate(clks[IMX8MQ_AUDIO_PLL1], 593999999);
