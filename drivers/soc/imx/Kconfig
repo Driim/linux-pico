@@ -27,6 +27,7 @@ config SOC_IMX8MQ
 	select SOC_BUS
 	select SRAM
 	select VIDEO_MX8_CAPTURE
+	select VIDEO_MXC_CAPTURE
 	select VIDEO_V4L2_SUBDEV_API
 	select DEVICE_THERMAL
 
