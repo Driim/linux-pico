@@ -269,6 +269,7 @@ int hdmi_get_hpd_state(state_struct *state, u8 *hpd)
 int hdmi_write_hdr_metadata(state_struct *state,
 			    union hdmi_infoframe *hdr_infoframe)
 {
+#if 0
 	struct imx_hdp *hdp = container_of(state, struct imx_hdp, state);
 	u8 buffer[40];
 	int infoframe_size;
@@ -287,4 +288,7 @@ int hdmi_write_hdr_metadata(state_struct *state,
 	return CDN_API_InfoframeSet(state, 1, infoframe_size,
 				    (u32 *)buffer,
 				    HDMI_INFOFRAME_TYPE_DRM);
+#endif
+	return 0;
 }
+

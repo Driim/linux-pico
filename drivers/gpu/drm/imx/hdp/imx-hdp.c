@@ -684,6 +684,7 @@ static void imx_hdp_imx_encoder_disable(struct drm_encoder *encoder)
 
 static void imx_hdp_imx_encoder_enable(struct drm_encoder *encoder)
 {
+#if 0
 	struct imx_hdp *hdp = container_of(encoder, struct imx_hdp, encoder);
 	union hdmi_infoframe frame;
 	struct hdr_static_metadata *hdr_metadata;
@@ -717,6 +718,7 @@ static void imx_hdp_imx_encoder_enable(struct drm_encoder *encoder)
 	}
 
 	hdp->ops->write_hdr_metadata(&hdp->state, &frame);
+#endif
 }
 
 static int imx_hdp_imx_encoder_atomic_check(struct drm_encoder *encoder,
@@ -724,15 +726,18 @@ static int imx_hdp_imx_encoder_atomic_check(struct drm_encoder *encoder,
 				    struct drm_connector_state *conn_state)
 {
 	struct imx_crtc_state *imx_crtc_state = to_imx_crtc_state(crtc_state);
-	struct imx_hdp *hdp = container_of(encoder, struct imx_hdp, encoder);
 
 	imx_crtc_state->bus_format = MEDIA_BUS_FMT_RGB101010_1X30;
+
+#if 0
+	struct imx_hdp *hdp = container_of(encoder, struct imx_hdp, encoder);
 
 	if (conn_state->hdr_metadata_changed &&
 	    conn_state->hdr_source_metadata_blob_ptr &&
 	    conn_state->hdr_source_metadata_blob_ptr->length)
 		hdp->hdr_metadata_present = true;
 
+#endif
 	return 0;
 }
 
@@ -911,7 +916,6 @@ static struct hdp_ops imx8mq_ops = {
 	.mode_set = hdmi_mode_set_t28hpc,
 	.get_edid_block = hdmi_get_edid_block,
 	.get_hpd_state = hdmi_get_hpd_state,
-	.write_hdr_metadata = hdmi_write_hdr_metadata,
 };
 
 static struct hdp_devtype imx8mq_hdmi_devtype = {
@@ -1109,8 +1113,10 @@ static int imx_hdp_imx_bind(struct device *dev, struct device *master,
 			   &imx_hdp_connector_funcs,
 			   DRM_MODE_CONNECTOR_HDMIA);
 
+#if 0
 	drm_object_attach_property(&connector->base,
 		connector->dev->mode_config.hdr_source_metadata_property, 0);
+#endif
 
 	drm_mode_connector_attach_encoder(connector, encoder);
 
