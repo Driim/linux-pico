@@ -841,9 +841,6 @@ static struct hdp_rw_func imx8qm_rw = {
 };
 
 static struct hdp_ops imx8qm_dp_ops = {
-#ifdef DEBUG_FW_LOAD
-	.fw_load = dp_fw_load,
-#endif
 	.fw_init = dp_fw_init,
 	.phy_init = dp_phy_init,
 	.mode_set = dp_mode_set,
@@ -865,9 +862,6 @@ static struct hdp_ops imx8qm_dp_ops = {
 };
 
 static struct hdp_ops imx8qm_hdmi_ops = {
-#ifdef DEBUG_FW_LOAD
-	.fw_load = hdmi_fw_load,
-#endif
 	.fw_init = hdmi_fw_init,
 	.phy_init = hdmi_phy_init,
 	.mode_set = hdmi_mode_set,

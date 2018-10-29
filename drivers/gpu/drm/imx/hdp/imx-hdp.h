@@ -28,8 +28,6 @@
 #include <drm/drm_dp_helper.h>
 #include "../../../../mxc/hdp/all.h"
 
-/* For testing hdp firmware define DEBUG_FW_LOAD */
-#undef DEBUG_FW_LOAD
 #define PLL_1188MHZ (1188000000)
 #define PLL_675MHZ (675000000)
 
