@@ -1186,6 +1186,10 @@
 &dcss {
 	status = "okay";
 
+#ifdef USE_HDMI
+       disp-dev = "hdmi_disp";
+       disp-mode = <5>;       
+#else
 	disp-dev = "mipi_disp";
 
 	clocks = <&clk IMX8MQ_CLK_DISP_APB_ROOT>,
@@ -1213,6 +1217,7 @@
 			remote-endpoint = <&mipi_dsi_in>;
 		};
 	};
+#endif
 };
 
 #ifdef USE_HDMI
