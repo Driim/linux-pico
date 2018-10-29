@@ -1,4 +1,4 @@
-obj-$(CONFIG_MX8_HDP) += \
+obj-$(CONFIG_DRM_IMX_HDP) += \
 	API_Audio.o \
 	API_AVI.o \
 	API_AFE.o \
