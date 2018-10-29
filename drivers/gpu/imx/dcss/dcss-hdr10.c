@@ -22,7 +22,7 @@
 #include <video/imx-dcss.h>
 #include "dcss-prv.h"
 
-#define USE_TBL_HEADER
+/* #define USE_TBL_HEADER */
 
 #ifdef USE_TBL_HEADER
 #include "dcss-hdr10-tables.h"
@@ -545,7 +545,7 @@ int dcss_hdr10_init(struct dcss_soc *dcss, unsigned long hdr10_base)
 				      dcss_hdr10_fw_handler);
 	if (ret < 0) {
 		dev_err(dcss->dev, "hdr10: Cannot async load DCSS FW.\n");
-		return ret;
+		return 0;
 	}
 #else
 	hdr10->fw_data = (u8 *)dcss_hdr10_tables;
