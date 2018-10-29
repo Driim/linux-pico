@@ -1095,7 +1095,7 @@ static int imx_hdp_imx_bind(struct device *dev, struct device *master,
 	bridge->encoder = encoder;
 	bridge->driver_private = hdp;
 	bridge->funcs = &imx_hdp_bridge_funcs;
-	ret = drm_bridge_attach(drm, bridge);
+	ret = drm_bridge_attach(encoder, bridge, NULL);
 	if (ret) {
 		DRM_ERROR("Failed to initialize bridge with drm\n");
 		return -EINVAL;
@@ -1172,7 +1172,6 @@ static void imx_hdp_imx_unbind(struct device *dev, struct device *master,
 
 	imx_hdp_call(hdp, pixel_clock_disable, &hdp->clks);
 	imx_hdp_call(hdp, pixel_link_deinit, &hdp->state);
-	drm_bridge_detach(&hdp->bridge);
 }
 
 static const struct component_ops imx_hdp_imx_ops = {
