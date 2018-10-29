@@ -13,24 +13,10 @@
  */
 
 #include <linux/clk.h>
-#ifdef DEBUG_FW_LOAD
-#include "mhdp_firmware.h"
-#endif
 #include "imx-hdp.h"
 #include "imx-hdmi.h"
 #include "imx-dp.h"
 
-#ifdef DEBUG_FW_LOAD
-void dp_fw_load(state_struct *state)
-{
-	pr_info("loading hdmi firmware\n");
-	CDN_API_LoadFirmware(state,
-		(u8 *)mhdp_iram0_get_ptr(),
-		mhdp_iram0_get_size(),
-		(u8 *)mhdp_dram0_get_ptr(),
-		mhdp_dram0_get_size());
-}
-#endif
 int dp_fw_init(state_struct *state)
 {
 	u8 echo_msg[] = "echo test";

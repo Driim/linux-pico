@@ -13,26 +13,13 @@
  */
 
 #include <linux/clk.h>
-#ifdef DEBUG_FW_LOAD
-#include "hdmitx_firmware.h"
-#endif
 #include "imx-hdp.h"
 #include "imx-hdmi.h"
 #include "API_AFE_ss28fdsoi_kiran_hdmitx.h"
 #include "API_AFE_t28hpc_hdmitx.h"
 
 static int character_freq_khz;
-#ifdef DEBUG_FW_LOAD
-void hdmi_fw_load(state_struct *state)
-{
-	pr_info("loading hdmi firmware\n");
-	CDN_API_LoadFirmware(state,
-		(u8 *)hdmitx_iram0_get_ptr(),
-		hdmitx_iram0_get_size(),
-		(u8 *)hdmitx_dram0_get_ptr(),
-		hdmitx_dram0_get_size());
-}
-#endif
+
 int hdmi_fw_init(state_struct *state)
 {
 	u8 echo_msg[] = "echo test";
