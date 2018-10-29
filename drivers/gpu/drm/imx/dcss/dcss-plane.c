@@ -246,7 +246,6 @@ static void dcss_plane_atomic_set_base(struct dcss_plane *dcss_plane)
 	struct drm_framebuffer *fb = state->fb;
 	struct drm_gem_cma_object *cma_obj = drm_fb_cma_get_gem_obj(fb, 0);
 	unsigned long p1_ba, p2_ba;
-	dma_addr_t caddr;
 	bool modifiers_present = !!(fb->flags & DRM_MODE_FB_MODIFIERS);
 	u32 pix_format = state->fb->format->format;
 
