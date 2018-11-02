@@ -105,7 +105,13 @@
 			compatible = "arm,cortex-a53";
 			reg = <0x0>;
 			enable-method = "psci";
-			clocks = <&clk IMX8MQ_ARM_PLL>;
+			clocks = <&clk IMX8MQ_CLK_A53_DIV>,
+				<&clk IMX8MQ_CLK_A53_SRC>,
+				<&clk IMX8MQ_ARM_PLL>,
+				<&clk IMX8MQ_ARM_PLL_OUT>,
+				<&clk IMX8MQ_SYS1_PLL_800M>;
+			clock-names = "a53", "arm_a53_src", "arm_pll", "arm_pll_out", "sys1_pll_800m";
+			clock-latency = <61036>;
 			next-level-cache = <&A53_L2>;
 			cpu-idle-states = <&CPU_SLEEP>;
 			#cooling-cells = <2>;
