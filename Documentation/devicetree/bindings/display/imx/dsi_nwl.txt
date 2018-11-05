@@ -10,6 +10,7 @@ Required properties:
 	The following strings are expected:
 			"fsl,imx8qm-mipi-dsi"
 			"fsl,imx8qxp-mipi-dsi"
+			"fsl,imx8mq-mipi-dsi_drm"
 - reg: 			the register range of the MIPI-DSI controller
 - interrupts: 		the interrupt number for this module
 - clock, clock-names: 	phandles to the MIPI-DSI clocks

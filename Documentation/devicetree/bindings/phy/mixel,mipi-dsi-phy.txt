@@ -6,6 +6,10 @@ signals for DSI.
 
 Required properties:
 - compatible: 		"mixel,<soc>-mipi-dsi-phy"
+   The following strings are expected:
+			"mixel,imx8qm-mipi-dsi-phy"
+			"mixel,imx8qxp-mipi-dsi-phy"
+			"mixel,imx8mq-mipi-dsi-phy"
 - reg:			the register range of the PHY controller
 - #phy-cells:		number of cells in PHY, as defined in
 			Documentation/devicetree/bindings/phy/phy-bindings.txt
