@@ -353,7 +353,7 @@ static void mixel_phy_set_prg_regs(struct phy *phy)
 	}
 }
 
-int mixel_mipi_phy_init(struct phy *phy)
+static int mixel_mipi_phy_init(struct phy *phy)
 {
 	struct mixel_mipi_phy_priv *priv = dev_get_drvdata(phy->dev.parent);
 
