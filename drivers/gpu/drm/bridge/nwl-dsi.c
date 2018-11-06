@@ -109,6 +109,13 @@
 #define RX_DT(x)	REG_GET((x), 21, 16)
 #define RX_VC(x)	REG_GET((x), 23, 22)
 
+/*
+ * DSI Video mode
+ */
+#define VIDEO_MODE_BURST_MODE_WITH_SYNC_PULSES      0
+#define VIDEO_MODE_NON_BURST_MODE_WITH_SYNC_EVENTS  BIT(0)
+#define VIDEO_MODE_BURST_MODE                       BIT(1)
+
 /* DSI IRQ handling */
 #define IRQ_STATUS			0x2a0
 #define SM_NOT_IDLE			BIT(0)
@@ -375,10 +382,13 @@ static void nwl_dsi_config_dpi(struct nwl_mipi_dsi *dsi)
 		!(dsi->dsi_mode_flags & MIPI_DSI_MODE_VIDEO_SYNC_PULSE);
 
 	if (burst_mode) {
-		nwl_dsi_write(dsi, VIDEO_MODE, 0x2);
+		nwl_dsi_write(dsi, VIDEO_MODE, VIDEO_MODE_BURST_MODE);
 		nwl_dsi_write(dsi, PIXEL_FIFO_SEND_LEVEL, 256);
 	} else {
-		nwl_dsi_write(dsi, VIDEO_MODE, 0x0);
+		nwl_dsi_write(dsi, VIDEO_MODE,
+			      ((dsi->dsi_mode_flags & MIPI_DSI_MODE_VIDEO_SYNC_PULSE) ?
+			       VIDEO_MODE_BURST_MODE_WITH_SYNC_PULSES :
+			       VIDEO_MODE_NON_BURST_MODE_WITH_SYNC_EVENTS));
 		nwl_dsi_write(dsi, PIXEL_FIFO_SEND_LEVEL, vm->hactive);
 	}
 
