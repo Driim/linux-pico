@@ -657,6 +657,7 @@
 	phy-handle = <&ethphy0>;
 	fsl,magic-packet;
 	status = "okay";
+	phy-supply = <&reg_pwr_en>;
 
 	mdio {
 		#address-cells = <1>;
