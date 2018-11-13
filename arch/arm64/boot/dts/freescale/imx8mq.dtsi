@@ -835,6 +835,15 @@
 				reg = <0x30340000 0x10000>;
 			};
 
+		 	ocotp: ocotp-ctrl@30350000 {
+ 				compatible = "fsl,imx8mq-ocotp", "fsl,imx7d-ocotp", "syscon";
+				reg = <0x30350000 0x10000>;
+				clocks = <&clk IMX8MQ_CLK_OCOTP_ROOT>;
+				/* For nvmem subnodes */
+				#address-cells = <1>;
+				#size-cells = <1>;
+ 			};
+
 			anatop: anatop@30360000 {
 				compatible = "fsl,imx8mq-anatop", "syscon";
 				reg = <0x30360000 0x10000>;
