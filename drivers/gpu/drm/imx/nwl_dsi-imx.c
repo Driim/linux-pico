@@ -785,8 +785,8 @@ static int imx_nwl_dsi_parse_of(struct device *dev, bool as_bridge)
 				clk_id, ret);
 			return ret;
 		}
-		dev_dbg(dev, "Setup clk %s (rate: %lu)\n",
-			clk_id, clk_get_rate(clk));
+		DRM_DEV_DEBUG_DRIVER(dev, "Setup clk %s (rate: %lu)\n",
+				     clk_id, clk_get_rate(clk));
 		dsi->clk_config[i].clk = clk;
 	}
 
@@ -800,19 +800,19 @@ static int imx_nwl_dsi_parse_of(struct device *dev, bool as_bridge)
 	dsi->csr = syscon_regmap_lookup_by_phandle(np, "csr");
 	if (IS_ERR(dsi->csr) && (devtype->ext_regs & IMX_REG_CSR)) {
 		ret = PTR_ERR(dsi->csr);
-		dev_err(dev, "Failed to get CSR regmap (%d)\n", ret);
+		DRM_DEV_ERROR(dev, "Failed to get CSR regmap (%d)\n", ret);
 		return ret;
 	}
 	dsi->reset = syscon_regmap_lookup_by_phandle(np, "src");
 	if (IS_ERR(dsi->reset) && (devtype->ext_regs & IMX_REG_SRC)) {
 		ret = PTR_ERR(dsi->reset);
-		dev_err(dev, "Failed to get SRC regmap (%d)\n", ret);
+		DRM_DEV_ERROR(dev, "Failed to get SRC regmap (%d)\n", ret);
 		return ret;
 	}
 	dsi->mux_sel = syscon_regmap_lookup_by_phandle(np, "mux-sel");
 	if (IS_ERR(dsi->mux_sel) && (devtype->ext_regs & IMX_REG_GPR)) {
 		ret = PTR_ERR(dsi->mux_sel);
-		dev_err(dev, "Failed to get GPR regmap (%d)\n", ret);
+		DRM_DEV_ERROR(dev, "Failed to get GPR regmap (%d)\n", ret);
 		return ret;
 	}
 	if (IS_ERR(dsi->mux_sel))
@@ -821,8 +821,8 @@ static int imx_nwl_dsi_parse_of(struct device *dev, bool as_bridge)
 	mux_val = IMX8MQ_GPR13_MIPI_MUX_SEL;
 	if (as_bridge)
 		mux_val = 0;
-	dev_info(dev, "Using %s as input source\n",
-		(mux_val)?"DCSS":"LCDIF");
+	DRM_DEV_INFO(dev, "Using %s as input source\n",
+		     (mux_val)?"DCSS":"LCDIF");
 	regmap_update_bits(dsi->mux_sel,
 		   IOMUXC_GPR13,
 		   IMX8MQ_GPR13_MIPI_MUX_SEL,
