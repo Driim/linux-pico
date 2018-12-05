@@ -731,7 +731,7 @@ static void nwl_dsi_begin_transmission(struct nwl_mipi_dsi *dsi)
 	const u8 *payload;
 	size_t length;
 	u16 word_count;
-	u8 lp_mode;
+	u8 hs_mode;
 	u32 val;
 
 	/* Send the payload, if any */
@@ -769,11 +769,11 @@ static void nwl_dsi_begin_transmission(struct nwl_mipi_dsi *dsi)
 	 * header[2] = Word Count MSB
 	 */
 	word_count = pkt->header[1] | (pkt->header[2] << 8);
-	lp_mode = (xfer->msg->flags & MIPI_DSI_MSG_USE_LPM)?0:1;
+	hs_mode = (xfer->msg->flags & MIPI_DSI_MSG_USE_LPM)?0:1;
 	val = WC(word_count) |
 		TX_VC(xfer->msg->channel) |
 		TX_DT(xfer->msg->type) |
-		HS_SEL(lp_mode) |
+		HS_SEL(hs_mode) |
 		BTA_TX(xfer->need_bta);
 	nwl_dsi_write(dsi, PKT_CONTROL, val);
 
