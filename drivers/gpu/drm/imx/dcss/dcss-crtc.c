@@ -142,6 +142,23 @@ static void dcss_crtc_atomic_flush(struct drm_crtc *crtc,
 		dcss_ctxld_enable(dcss);
 }
 
+
+/* Print Four-character-code (FOURCC) */
+static char *print_fourcc(u32 fmt)
+{
+        static char code[5];
+
+        code[0] = (unsigned char)(fmt & 0xff);
+        code[1] = (unsigned char)((fmt >> 8) & 0xff);
+        code[2] = (unsigned char)((fmt >> 16) & 0xff);
+        code[3] = (unsigned char)((fmt >> 24) & 0xff);
+        code[4] = '\0';
+
+        return code;
+}
+
+
+
 void dcss_crtc_setup_opipe(struct drm_crtc *crtc, struct drm_connector *conn,
 			   u32 colorimetry, u32 eotf,
 			   enum hdmi_quantization_range qr)
@@ -183,9 +200,9 @@ void dcss_crtc_setup_opipe(struct drm_crtc *crtc, struct drm_connector *conn,
 	else
 		dcss_crtc->opipe_pix_format = DRM_FORMAT_ARGB8888;
 
-	DRM_INFO("OPIPE_CFG: gamut = %d, nl = %d, pr = %d, pix_format = %d\n",
+	DRM_INFO("OPIPE_CFG: gamut = %d, nl = %d, pr = %d, pix_format = %s",
 		 dcss_crtc->opipe_g, dcss_crtc->opipe_nl,
-		 dcss_crtc->opipe_pr, dcss_crtc->opipe_pix_format);
+		 dcss_crtc->opipe_pr, print_fourcc(dcss_crtc->opipe_pix_format));
 }
 
 int dcss_crtc_get_opipe_cfg(struct drm_crtc *crtc,
