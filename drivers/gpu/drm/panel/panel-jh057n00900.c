@@ -18,23 +18,23 @@
 /* The Rockteck jh057n00900 uses a Sitronix ST7703 */
 
 /* Manufacturer Command Set */
-#define ST_SETDISP   0xB2    /* display resolution */
-#define ST_SETRGBIF  0xB3    /* porch adjustment */
-#define ST_SETCYC    0xB4    /* display inversion type */
-#define ST_SETBGP    0xB5    /* Reference Voltage */
-#define ST_SETVCOM   0xB6    /* VCom */
-#define ST_SETOTP    0xB7
-#define ST_SETPOWER_EXT 0xB8
-#define ST_SETEXTC  0xB9
-#define ST_SETMIPI  0xBA
-#define ST_SETVDC   0xBC
-#define ST_SETSCR   0xC0
-#define ST_SETPOWER 0xC1
-#define ST_SETPANEL 0xCC
-#define ST_SETGAMMA 0xE0
-#define ST_SETEQ    0xE3
-#define ST_SETGIP1  0xE9
-#define ST_SETGIP2  0xEA
+#define ST7703_CMD_SETDISP  0xB2    /* display resolution */
+#define ST7703_CMD_SETRGBIF 0xB3    /* porch adjustment */
+#define ST7703_CMD_SETCYC   0xB4    /* display inversion type */
+#define ST7703_CMD_SETBGP   0xB5    /* Reference Voltage */
+#define ST7703_CMD_SETVCOM  0xB6    /* VCom */
+#define ST7703_CMD_SETOTP   0xB7
+#define ST7703_CMD_SETPOWER_EXT 0xB8
+#define ST7703_CMD_SETEXTC  0xB9
+#define ST7703_CMD_SETMIPI  0xBA
+#define ST7703_CMD_SETVDC   0xBC
+#define ST7703_CMD_SETSCR   0xC0
+#define ST7703_CMD_SETPOWER 0xC1
+#define ST7703_CMD_SETPANEL 0xCC
+#define ST7703_CMD_SETGAMMA 0xE0
+#define ST7703_CMD_SETEQ    0xE3
+#define ST7703_CMD_SETGIP1  0xE9
+#define ST7703_CMD_SETGIP2  0xEA
 
 struct jh057n {
 	struct device *dev;
@@ -116,46 +116,46 @@ static int jh057n_init_sequence(struct jh057n *ctx)
 	msleep(200);
 
 	/* Enable user command */
-	dcs_write_seq(ctx, ST_SETEXTC, /* 3 */
+	dcs_write_seq(ctx, ST7703_CMD_SETEXTC, /* 3 */
 		      0xF1, 0x12, 0x83);
 	/* 6 params in ST7703 docs */
-	dcs_write_seq(ctx, ST_SETMIPI, /* 27 */
+	dcs_write_seq(ctx, ST7703_CMD_SETMIPI, /* 27 */
 		      0x33, 0x81, 0x05, 0xF9, 0x0E, 0x0E, 0x20, 0x00,
 		      0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x44, 0x25,
 		      0x00, 0x91, 0x0A, 0x00, 0x00, 0x02, 0x4F, 0x11,
 		      0x00, 0x00, 0x37);
 	/* 6 params in ST7703 docs */
-	dcs_write_seq(ctx, ST_SETPOWER_EXT, /* 4 */
+	dcs_write_seq(ctx, ST7703_CMD_SETPOWER_EXT, /* 4 */
 		      0x76, 0x22, 0x20, 0x03);
 	/* 4 params in ST7703 docs */
-	dcs_write_seq(ctx, ST_SETRGBIF, /* 10 */
+	dcs_write_seq(ctx, ST7703_CMD_SETRGBIF, /* 10 */
 		      0x10, 0x10, 0x05, 0x05, 0x03, 0xFF, 0x00, 0x00,
 		      0x00, 0x00);
 	/* 8 params in ST7703 docs */
-	dcs_write_seq(ctx, ST_SETSCR, /* 9 */
+	dcs_write_seq(ctx, ST7703_CMD_SETSCR, /* 9 */
 		      0x73, 0x73, 0x50, 0x50, 0x00, 0x00, 0x08, 0x70,
 		      0x00);
 	/* -1.6V & + 1.9V */
-	dcs_write_seq(ctx, ST_SETVDC, 0x4E);
+	dcs_write_seq(ctx, ST7703_CMD_SETVDC, 0x4E);
 	/* SS_PANEL, REV_PANEL, BGR_PANEL */
-	dcs_write_seq(ctx, ST_SETPANEL, 0x0B);
+	dcs_write_seq(ctx, ST7703_CMD_SETPANEL, 0x0B);
 	/* 2 params in ST7703 docs */
-	dcs_write_seq(ctx, ST_SETCYC, 0x80);
+	dcs_write_seq(ctx, ST7703_CMD_SETCYC, 0x80);
 	/* weird values, e.g. a 720 panel has BIT(1) 3rd param */
-	dcs_write_seq(ctx, ST_SETDISP, 0xF0, 0x12, 0x30);
-	dcs_write_seq(ctx, ST_SETEQ, /* 14 */
+	dcs_write_seq(ctx, ST7703_CMD_SETDISP, 0xF0, 0x12, 0x30);
+	dcs_write_seq(ctx, ST7703_CMD_SETEQ, /* 14 */
 		      0x07, 0x07, 0x0B, 0x0B, 0x03, 0x0B, 0x00, 0x00,
 		      0x00, 0x00, 0xFF, 0x00, 0xC0, 0x10);
-	dcs_write_seq(ctx, ST_SETPOWER, /* 12 */
+	dcs_write_seq(ctx, ST7703_CMD_SETPOWER, /* 12 */
 		      0x54, 0x00, 0x1E, 0x1E, 0x77, 0xF1, 0xFF, 0xFF,
 		      0xCC, 0xCC, 0x77, 0x77);
 	/* setbgp is different from our first data set*/
-	dcs_write_seq(ctx, ST_SETBGP, 0x08, 0x08);
+	dcs_write_seq(ctx, ST7703_CMD_SETBGP, 0x08, 0x08);
 	/* setvcom is different from our first data set*/
-	dcs_write_seq(ctx, ST_SETVCOM, 0x28, 0x28);
+	dcs_write_seq(ctx, ST7703_CMD_SETVCOM, 0x28, 0x28);
 	/* undocumented */
 	dcs_write_seq(ctx, 0xBF, 0x02, 0x11, 0x00);
-	dcs_write_seq(ctx, ST_SETGIP1, /* 63 */
+	dcs_write_seq(ctx, ST7703_CMD_SETGIP1, /* 63 */
 		      0x82, 0x10, 0x06, 0x05, 0x9E, 0x0A, 0xA5, 0x12,
 		      0x31, 0x23, 0x37, 0x83, 0x04, 0xBC, 0x27, 0x38,
 		      0x0C, 0x00, 0x03, 0x00, 0x00, 0x00, 0x0C, 0x00,
@@ -165,7 +165,7 @@ static int jh057n_init_sequence(struct jh057n *ctx)
 		      0x02, 0x88, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
 		      0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00);
 	/* 39 parameters accordin to ST7703 docs */
-	dcs_write_seq(ctx, ST_SETGIP2, /* 61 */
+	dcs_write_seq(ctx, ST7703_CMD_SETGIP2, /* 61 */
 		      0x02, 0x21, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
 		      0x00, 0x00, 0x00, 0x00, 0x02, 0x46, 0x02, 0x88,
 		      0x88, 0x88, 0x88, 0x88, 0x88, 0x64, 0x88, 0x13,
@@ -174,7 +174,7 @@ static int jh057n_init_sequence(struct jh057n *ctx)
 		      0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
 		      0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x30, 0x0A,
 		      0xA5, 0x00, 0x00, 0x00, 0x00);
-	dcs_write_seq(ctx, ST_SETGAMMA, /* 34 */
+	dcs_write_seq(ctx, ST7703_CMD_SETGAMMA, /* 34 */
 		      0x00, 0x09, 0x0E, 0x29, 0x2D, 0x3C, 0x41, 0x37,
 		      0x07, 0x0B, 0x0D, 0x10, 0x11, 0x0F, 0x10, 0x11,
 		      0x18, 0x00, 0x09, 0x0E, 0x29, 0x2D, 0x3C, 0x41,
