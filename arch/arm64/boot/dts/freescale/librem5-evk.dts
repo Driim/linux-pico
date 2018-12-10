@@ -16,8 +16,8 @@
 
 /*
  * Define this to use HDMI instead of MIPI DSI
-#define USE_HDMI
  */
+#define USE_HDMI
 
 /*
  * Define this to enable i2c3 channel instead of pwm4 on IMX8M-SOM-BSB
