@@ -35,7 +35,7 @@
 #include "dt-bindings/input/input.h"
 
 / {
-	model = "Emcraft i.MX8M SOM";
+	model = "Purism Librem 5 devkit";
 	compatible = "emcraft,imx8m-som", "fsl,imx8mq", "fsl,imx7d";
 
 	chosen {
