@@ -48,6 +48,7 @@
 #define USB_VENDOR_REGISTER_READ     0x15
 #define USB_VENDOR_REGISTER_WRITE    0x16
 #define RSI_USB_TX_HEAD_ROOM         128
+#define TIMEOUT			0
 
 #define MAX_TX_URBS                  1
 #if defined (CONFIG_RSI_BT_ALONE) || defined(CONFIG_RSI_COEX_MODE)
@@ -58,6 +59,7 @@
 #define MAX_BULK_EP                  8
 #define MGMT_EP                      1
 #define DATA_EP                      2
+#define ZIGB_EP                      3
 
 struct rx_usb_ctrl_block {
 	u8 *data;

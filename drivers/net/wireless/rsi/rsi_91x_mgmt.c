@@ -2,7 +2,8 @@
  * Copyright (c) 2017 Redpine Signals Inc. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
- * modification, are permitted provided that the following conditions are met:
+ * modification, are permitted provided that the following conditions
+ * are met:
  *
  * 	1. Redistributions of source code must retain the above copyright
  * 	   notice, this list of conditions and the following disclaimer.
@@ -12,8 +13,8 @@
  * 	   documentation and/or other materials provided with the distribution.
  *
  * 	3. Neither the name of the copyright holder nor the names of its
- * 	   contributors may be used to endorse or promote products derived from
- * 	   this software without specific prior written permission.
+ * 	   contributors may be used to endorse or promote products derived
+ * 	   from this software without specific prior written permission.
  *
  * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
  * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
@@ -618,12 +619,7 @@ static void rsi_set_default_parameters(struct rsi_common *common)
 	common->iface_down = true;
 	common->endpoint = EP_2GHZ_20MHZ;
 	common->driver_mode = 1; /* End-to-End Mode */
-
-	if (common->priv->device_model == RSI_DEV_9116)
-		common->ta_aggr = 3;
-	else
-		common->ta_aggr = 0;
-
+	common->ta_aggr = 3;
 	common->skip_fw_load = 0; /* Default disable skipping fw loading */
 	common->lp_ps_handshake_mode = 0; /* Default No HandShake mode*/
 	common->ulp_ps_handshake_mode = 2; /* Default PKT HandShake mode*/
@@ -632,7 +628,11 @@ static void rsi_set_default_parameters(struct rsi_common *common)
 	common->country_code = 840; /* Default US */
 	common->wlan_rf_power_mode = 0;
 	common->bt_rf_power_mode = 0;
+#ifndef CONFIG_RSI_PURISM
 	common->obm_ant_sel_val = 2;
+#else
+	common->obm_ant_sel_val = 3;
+#endif
 	common->antenna_diversity = 0;
 	common->tx_power = RSI_TXPOWER_MAX;
 	common->dtim_cnt = 2;
@@ -1381,6 +1381,30 @@ int rsi_send_common_dev_params(struct rsi_common *common)
 	dev_cfgs->driver_mode = common->driver_mode;
 	dev_cfgs->region_code = NL80211_DFS_FCC;
 	dev_cfgs->antenna_sel_val = common->obm_ant_sel_val;
+	dev_cfgs->dev_peer_dist = common->peer_dist;
+	dev_cfgs->dev_bt_feature_bitmap = common->bt_feature_bitmap;
+	dev_cfgs->uart_dbg = common->uart_debug;
+	if (common->priv->device_model == RSI_DEV_9116) {
+		/*
+		 * In 9116_feature_bitmap, BITS(3:0) are used for module type
+		 * selection, BIT(4) is used for host interface on demand
+		 * feature option. BIT(5) is used for selecting sleep clock
+		 * source. All variables below are module param of 2 byte
+		 * size.
+		 */
+		dev_cfgs->features_9116 = (common->ext_opt & 0xF) |
+					  (common->host_intf_on_demand << 4) |
+					  (common->crystal_as_sleep_clk << 5) |
+					  (common->feature_bitmap_9116 << 11);
+		dev_cfgs->dev_ble_roles = common->ble_roles;
+		/* In bt_bdr, bt_bdr_mode used a byte[0:7],
+		 * three_wire_coex use one bit [8]. Module param of 2 byte
+		 * size.
+		 */
+		dev_cfgs->bt_bdr = ((common->three_wire_coex << 8) |
+				    common->bt_bdr_mode);
+		dev_cfgs->dev_anchor_point_gap = common->anchor_point_gap;
+	}
 
 	skb_put(skb, frame_len);
 
@@ -2162,7 +2186,7 @@ void rsi_validate_bgscan_channels(struct rsi_hw *adapter,
 		if (i >= sband->n_channels)
 			continue;
 
-		/* Check channel availablity for the current reg domain */
+		/* Check channel availability for the current reg domain */
 		if (ch->flags & IEEE80211_CHAN_DISABLED)
 			continue;
 
@@ -2227,11 +2251,17 @@ int rsi_send_bgscan_params(struct rsi_common *common, int enable)
 			cpu_to_le16(info->passive_scan_duration);
 	bgscan->two_probe = info->two_probe;
 
-	memcpy(bgscan->channels2scan,
-	       info->channels2scan,
-	       info->num_bg_channels * 2);
-	bgscan->num_bg_channels = info->num_bg_channels;
-
+	if (common->debugfs_bgscan) {
+		bgscan->num_bg_channels = common->bgscan_info.num_user_channels;
+		memcpy(bgscan->channels2scan,
+			common->bgscan_info.user_channels,
+			bgscan->num_bg_channels * 2);
+	} else {
+		memcpy(bgscan->channels2scan,
+			info->channels2scan,
+			info->num_bg_channels * 2);
+		bgscan->num_bg_channels = info->num_bg_channels;
+	}
 	skb_put(skb, frame_len);
 
 	rsi_hex_dump(MGMT_TX_ZONE, "bgscan params req", skb->data, skb->len);
@@ -2554,7 +2584,7 @@ int rsi_send_ps_request(struct rsi_hw *adapter, bool enable)
 }
 
 /**
- * rsi_set_antenna() - This fuction handles antenna selection functionality.
+ * rsi_set_antenna() - This function handles antenna selection functionality.
  *
  * @common: Pointer to the driver private structure.
  * @antenna: bitmap for tx antenna selection
@@ -2992,9 +3022,14 @@ int rsi_send_probe_request(struct rsi_common *common,
 	*pos++ = WLAN_EID_SSID;
 	*pos++ = ie_ssid_len ? ie_ssid_len - 2 : 0; 
 
-	if (ssid_info && ie_ssid_len) { 
-               memcpy(pos, ssid_info->ssid, ie_ssid_len);
-		pos += ie_ssid_len;
+	if (ssid_info && ie_ssid_len) {
+		if (scan_req->n_ssids > 0 || common->p2p_enabled) {
+			memcpy(pos, ssid_info->ssid, ie_ssid_len - NULL_SSID);
+			pos += ie_ssid_len - NULL_SSID;
+		} else {
+			memcpy(pos, ssid_info->ssid, ie_ssid_len);
+			pos += ie_ssid_len;
+		}
 	}
 
         if (scan_req->ie_len) 
@@ -3027,7 +3062,15 @@ int rsi_send_probe_request(struct rsi_common *common,
 	info = IEEE80211_SKB_CB(skb);
 	tx_params = (struct skb_info *)info->driver_data;
 	tx_params->internal_hdr_size = skb_headroom(skb);
-	info->control.vif = common->priv->vifs[0];	
+#ifndef CONFIG_RSI_P2P
+	info->control.vif = common->priv->vifs[0];
+#else
+	info->control.vif = common->priv->vifs[1];
+	if (!info->control.vif)
+		return 0;
+	memcpy(hdr->addr2, info->control.vif->addr, ETH_ALEN);
+	skb_trim(skb, skb->len - INVALID_DATA);
+#endif
 	q_num = MGMT_SOFT_Q;
 	skb->priority = q_num;
 
@@ -3048,7 +3091,7 @@ void rsi_scan_start(struct work_struct *work)
 	struct ieee80211_channel *cur_chan = NULL;
 	struct cfg80211_scan_request *scan_req = NULL;
 	struct rsi_common *common =
-		container_of(work, struct rsi_common ,scan_work);
+		container_of(work, struct rsi_common, scan_work);
 	u8 ii, jj;
 	int status = 0;
 #if (LINUX_VERSION_CODE >= KERNEL_VERSION(4, 8, 0))
@@ -3072,8 +3115,7 @@ void rsi_scan_start(struct work_struct *work)
 	common->scan_in_prog = true;
 	rsi_disable_ps(common->priv);
 	rsi_reset_event(&common->mgmt_cfm_event);
-	rsi_wait_event(&common->mgmt_cfm_event,
-		       msecs_to_jiffies(1000));
+	rsi_wait_event(&common->mgmt_cfm_event, msecs_to_jiffies(2000));
 
 	for (ii =0; ii < scan_req->n_channels ; ii++) {
 		if (common->iface_down)
@@ -3144,10 +3186,10 @@ void rsi_scan_start(struct work_struct *work)
 	del_timer(&common->scan_timer);
 	common->scan_in_prog = false;
 	if(vif->type != NL80211_IFTYPE_AP) {
-		rsi_enable_ps(common->priv);
+		rsi_disable_ps(common->priv);
 		rsi_reset_event(&common->mgmt_cfm_event);
 		rsi_wait_event(&common->mgmt_cfm_event,
-			       msecs_to_jiffies(1000));
+			       msecs_to_jiffies(2000));
 	}
 #if (LINUX_VERSION_CODE >= KERNEL_VERSION(4, 8, 0))
 	info.aborted = false;
@@ -3204,6 +3246,49 @@ static int rsi_send_w9116_features(struct rsi_common *common)
 
 	return rsi_send_internal_mgmt_frame(common, skb);
 }
+
+int rsi_send_bt_reg_params(struct rsi_common *common)
+{
+	struct sk_buff *skb;
+	struct bt_register_param *bt_reg_param;
+
+	rsi_dbg(ERR_ZONE, "%s: Sending BT reg frame\n", __func__);
+	skb = dev_alloc_skb(sizeof(*bt_reg_param));
+	if (!skb) {
+		rsi_dbg(ERR_ZONE, "%s: Failed in allocation of skb\n",
+				__func__);
+		return -ENOMEM;
+	}
+#define BT_PKT_TYPE 0x55
+	memset(skb->data, 0, sizeof(struct bt_register_param));
+	bt_reg_param = (struct bt_register_param *)skb->data;
+
+	bt_reg_param->desc_word[7] = cpu_to_le16(BT_PKT_TYPE);
+	bt_reg_param->desc_word[0] = (RSI_BT_MGMT_Q << 12);
+	if (common->priv->device_model == RSI_DEV_9116) {
+		bt_reg_param->desc_word[0] |= cpu_to_le16((sizeof(*bt_reg_param) 
+							   - FRAME_DESC_SZ));
+		bt_reg_param->params[2] = (common->bt_rf_type & 0x0F);
+		bt_reg_param->params[3] = common->ble_tx_pwr_inx;
+		bt_reg_param->params[4] = (common->ble_pwr_save_options & 0x0F);
+		skb_put(skb, sizeof(struct bt_register_param));
+	} else {
+		bt_reg_param->desc_word[0] |= cpu_to_le16((sizeof(*bt_reg_param) 
+					  		   - FRAME_DESC_SZ - 3));
+		bt_reg_param->params[0] = (common->bt_rf_tx_power_mode & 0x0F);
+		bt_reg_param->params[0] |= (common->bt_rf_rx_power_mode & 0xF0);
+		skb_put(skb, sizeof(struct bt_register_param) - 3);
+	}
+		
+	rsi_hex_dump(ERR_ZONE, "BT REG PARAMS", skb->data, skb->len);
+#ifdef CONFIG_RSI_COEX_MODE
+	return rsi_coex_send_pkt(common, skb, BT_Q);
+#else
+	return rsi_send_bt_pkt(common, skb);
+#endif
+
+}
+
 /**
  * rsi_handle_ta_confirm() - This function handles the confirm frames.
  * @common: Pointer to the driver private structure.
@@ -3247,8 +3332,10 @@ static int rsi_handle_ta_confirm(struct rsi_common *common, u8 *msg)
 		rsi_dbg(FSM_ZONE, "Bootup params confirmation.\n");
 		if (common->fsm_state == FSM_BOOT_PARAMS_SENT) {
 			if (adapter->device_model == RSI_DEV_9116) {
-				common->band = NL80211_BAND_5GHZ;
-				common->num_supp_bands = 2;
+				if (common->band == NL80211_BAND_5GHZ)
+					common->num_supp_bands = 2;
+				else
+					common->num_supp_bands = 1;
 
 				if (rsi_send_reset_mac(common))
 					goto out;
@@ -3523,6 +3610,9 @@ int rsi_handle_card_ready(struct rsi_common *common, u8 *msg)
 				memcpy(common->mac_addr, &msg[20],
 				       ETH_ALEN);
 			}
+			common->band =
+				(msg[27] == RSI_BAND_CHECK ? NL80211_BAND_5GHZ
+				 : NL80211_BAND_2GHZ);
 			rsi_hex_dump(INIT_ZONE, "MAC Addr",
 				     common->mac_addr, ETH_ALEN);
 		}

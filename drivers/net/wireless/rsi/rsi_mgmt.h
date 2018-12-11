@@ -53,6 +53,9 @@
 
 #define RSI_MAC_SUB_LEN                3
 
+#define NULL_SSID                      2
+#define INVALID_DATA                   64
+
 /* EPPROM_READ_ADDRESS */
 #define WLAN_MAC_EEPROM_ADDR            40
 #define WLAN_MAC_MAGIC_WORD_LEN         0x01
@@ -68,6 +71,8 @@
 #define	DISCONNECT_PKT          	BIT(3) 
 #define	HW_BMISS_PKT            	BIT(4) 
 #define INSERT_SEQ_IN_FW                BIT(2)
+
+#define RSI_BAND_CHECK			0x03
 
 /* Receive Frame Types */
 enum rx_cmd_type {
@@ -254,6 +259,8 @@ enum rx_cmd_type {
 #endif
 #define HOST_BG_SCAN_TRIG		BIT(4)
 #define TARGET_BOARD_CARACALLA		BIT(10)
+#define RSI_TX_POWER_MODE_MASK		0x0F
+#define RSI_RX_POWER_MODE_MASK		0xF0
 
 enum opmode {
 	UNKNOW_OPMODE = -1,
@@ -369,6 +376,11 @@ struct rsi_boot_params {
 	__le16 desc_word[8];
 	struct bootup_params bootup_params;
 } __packed;
+
+struct bt_register_param {
+	u16 desc_word[8];
+	u8 params[5];
+}__packed;
 
 struct rsi_peer_notify {
 	__le16 desc_word[8];
@@ -519,7 +531,14 @@ struct rsi_config_vals {
 	u8 driver_mode;
 	u8 region_code;
 	u8 antenna_sel_val;
-	u8 reserved[16];
+	u16 dev_peer_dist;
+	u16 dev_bt_feature_bitmap;
+	u16 uart_dbg;
+	u16 features_9116;
+	u16 dev_ble_roles;
+	u16 bt_bdr;
+	u16 dev_anchor_point_gap;
+	u8 reserved[2];
 } __packed;
 
 struct rsi_request_ps {
@@ -636,6 +655,7 @@ void init_bgscan_params(struct rsi_common *common);
 int rsi_set_antenna(struct rsi_common *common, u8 antenna);
 int rsi_hci_attach(struct rsi_common *common);
 int rsi_handle_card_ready(struct rsi_common *common, u8 *msg);
+int rsi_send_bt_reg_params(struct rsi_common *common);
 void rsi_validate_bgscan_channels(struct rsi_hw *adapter,
 				  struct bgscan_config_params *params);
 #ifdef CONFIG_RSI_WOW

@@ -45,6 +45,8 @@
  *
  * Return: argument
  */
+int sdio_clock = 50;
+module_param(sdio_clock, int, S_IRUGO);
 static u32 rsi_sdio_set_cmd52_arg(bool rw,
 				  u8 func,
 				  u8 raw,
@@ -55,6 +57,16 @@ static u32 rsi_sdio_set_cmd52_arg(bool rw,
 		((raw & 1) << 27) | (1 << 26) |
 		((address & 0x1FFFF) << 9) | (1 << 8) |
 		(writedata & 0xFF);
+}
+
+static int rsi_sdio_validate_clock(int sdio_clock)
+{
+	if (sdio_clock > 50 || sdio_clock <= 0) {
+		rsi_dbg(ERR_ZONE, "%s: Wrong Value given for SDIO clock\n"
+			"\t\tSetting default clock to SDIO\n", __func__);
+		sdio_clock = 50;
+	}
+	return sdio_clock;
 }
 
 /**
@@ -481,7 +493,7 @@ static void rsi_reset_card(struct sdio_func *pfunction)
 
 	/* Set clock */
 	if (mmc_card_hs(card))
-		clock = 50000000;
+		clock = (rsi_sdio_validate_clock(sdio_clock) * 1000000);
 	else
 		clock = card->cis.max_dtr;
 
@@ -564,7 +576,7 @@ static int rsi_setupcard(struct rsi_hw *adapter)
 		(struct rsi_91x_sdiodev *)adapter->rsi_dev;
 	int status = 0;
 
-	rsi_setclock(adapter, 50000);
+	rsi_setclock(adapter, (rsi_sdio_validate_clock(sdio_clock) * 1000));
 
 	dev->tx_blk_size = 256;
 	adapter->tx_blk_size = dev->tx_blk_size;

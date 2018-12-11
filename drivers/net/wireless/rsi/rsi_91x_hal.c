@@ -716,7 +716,7 @@ static int bl_write_cmd(struct rsi_hw *adapter, u8 cmd, u8 exp_resp, u16 *cmd_re
 	u8 output = 0;
 	u32 regin_input = 0;
 
-	regin_input = (REGIN_INPUT | adapter->priv->coex_mode);
+	regin_input = (REGIN_INPUT | adapter->priv->load_image_no);
 
 	while (!adapter->blcmd_timer_expired) {
 		regin_val = 0;
@@ -835,6 +835,7 @@ static int bl_cmd(struct rsi_hw *adapter, u8 cmd, u8 exp_resp, char *str)
 		rsi_dbg(ERR_ZONE,
 			"%s: Command %s (%0x) writing failed..\n",
 			__func__, str, cmd);
+		bl_stop_cmd_timer(adapter);
 		goto fail;
 	}
 	bl_stop_cmd_timer(adapter);
@@ -1129,6 +1130,7 @@ static int rsi_load_9116_firmware(struct rsi_hw *adapter)
 	metadata_p = &metadata[adapter->priv->coex_mode];
 
 	rsi_dbg(INIT_ZONE, "%s: loading file %s\n", __func__, metadata_p->name);
+	adapter->fw_file_name = metadata_p->name;
 
 	if ((request_firmware(&fw_entry, metadata_p->name,
 			      adapter->device)) < 0) {
@@ -1153,6 +1155,7 @@ static int rsi_load_9116_firmware(struct rsi_hw *adapter)
 			((fw_entry->data[LMAC_VER_OFFSET_RS9116 + 4]) & 0xFF);
 	}
 
+	rsi_print_version(common);
 	if (instructions_sz % 4)
 		instructions_sz += (4 - (instructions_sz % 4));
 
@@ -1242,9 +1245,8 @@ static int rsi_load_9116_flash_fw(struct rsi_hw *adapter)
 			__func__);
 		return -EIO;
 	}
-	if ((hif_ops->master_reg_write(adapter, SWBL_REGIN,
-					RSI_IMAGE_ONE_LOAD_FW_BL_CMD,
-					4)) < 0) {
+	if ((bl_cmd(adapter, LOAD_HOSTED_FW, LOADING_INITIATED,
+		    "LOAD_HOSTED_FW")) < 0){
 		rsi_dbg(ERR_ZONE, "%s: FW_LOAD_BL_CMD failed\n",
 			__func__);
 		return -EIO;
@@ -1270,21 +1272,34 @@ static int rsi_load_firmware(struct rsi_hw *adapter)
 	u32 regout_val = 0;
 	u16 tmp_regout_val = 0;
 	u32 content_size = 0;
-	struct ta_metadata *metadata_p;
-	int status;
+
 #ifdef CONFIG_RSI_PURISM
 	u32 flash_data_start = 0;
 #endif
-	bl_start_cmd_timer(adapter, BL_CMD_TIMEOUT);
+	struct ta_metadata *metadata_p;
+	int status;
 
+	bl_start_cmd_timer(adapter, BL_CMD_TIMEOUT);
 #ifdef CONFIG_RSI_PURISM
-	if ((hif_ops->master_reg_read(adapter,
-				      RSI_FLASH_READ,
-				      &flash_data_start,
-				      2)) < 0) {
-		rsi_dbg(ERR_ZONE,
-			"%s: RSI_FLASH_READ failed\n", __func__);
-		goto fail;
+	if (adapter->priv->coex_mode == 2 || adapter->priv->coex_mode == 4) {
+		if ((hif_ops->master_reg_read(adapter,
+						RSI_FLASH_READ_COEX_IMAGE,
+						&flash_data_start,
+						2)) < 0) {
+			rsi_dbg(ERR_ZONE,
+				"%s: RSI_FLASH_READ failed\n", __func__);
+			goto bl_cmd_fail;
+		}
+	} else {
+		if ((hif_ops->master_reg_read(adapter,
+						RSI_FLASH_READ_WLAN_IMAGE,
+						&flash_data_start,
+						2)) < 0) {
+
+			rsi_dbg(ERR_ZONE,
+				"%s: RSI_FLASH_READ failed\n", __func__);
+			goto bl_cmd_fail;
+		}
 	}
 #endif
 	while (!adapter->blcmd_timer_expired) {
@@ -1294,7 +1309,7 @@ static int rsi_load_firmware(struct rsi_hw *adapter)
 					      2)) < 0) {
 			rsi_dbg(ERR_ZONE,
 				"%s: REGOUT read failed\n", __func__);
-			goto fail;
+			goto bl_cmd_fail;
 		}
 		mdelay(1);
 		if ((regout_val >> 8) == REGOUT_VALID)
@@ -1304,7 +1319,7 @@ static int rsi_load_firmware(struct rsi_hw *adapter)
 		rsi_dbg(ERR_ZONE, "%s: REGOUT read timedout\n", __func__);
 		rsi_dbg(ERR_ZONE,
 			"%s: Soft boot loader not present\n", __func__);
-		goto fail;
+		goto bl_cmd_fail;
 	}
 	bl_stop_cmd_timer(adapter);
 
@@ -1453,6 +1468,10 @@ success:
 	rsi_dbg(ERR_ZONE, "***** Firmware Loading successful *****\n");
 	release_firmware(fw_entry);
 	return 0;
+
+bl_cmd_fail:
+	bl_stop_cmd_timer(adapter);
+	return -EINVAL;
 
 fail:
 	rsi_dbg(ERR_ZONE, "##### Firmware loading failed #####\n");
@@ -1649,6 +1668,13 @@ int rsi_hal_device_init(struct rsi_hw *adapter)
 	rsi_dbg(ERR_ZONE, "%s: oper_mode = %d, coex_mode = %d\n",
 		__func__, common->oper_mode, common->coex_mode);
 
+#ifdef CONFIG_RSI_PURISM
+	if (adapter->device_model == RSI_DEV_9116 && (common->coex_mode == 2 ||
+						      common->coex_mode == 4))
+		common->load_image_no = 2;
+#else
+		common->load_image_no = common->coex_mode;
+#endif
 	switch (adapter->device_model) {
 	case RSI_DEV_9113:
 	case RSI_DEV_9116:

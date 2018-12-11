@@ -41,7 +41,7 @@ struct rsi_hw;
 
 #include "rsi_ps.h"
 
-#define DRV_VER				"RS9116.NB0.NL.PURISM.LNX.1.1"
+#define DRV_VER				"RS9116.NB0.NL.PURISM.LNX.1.3"
 
 #define ERR_ZONE                        BIT(0) /* Error Msgs		*/
 #define INFO_ZONE                       BIT(1) /* Generic Debug Msgs	*/
@@ -430,6 +430,7 @@ struct rsi_common {
 	bool hibernate_resume;
 	bool reinit_hw;
 	struct completion wlan_init_completion;
+	bool debugfs_bgscan;
 #ifdef CONFIG_RSI_WOW
 	u8 wow_flags;
 #endif
@@ -475,10 +476,10 @@ struct rsi_common {
 	struct rsi_event probe_cfm_event;
 	struct rsi_event chan_change_event;
 	struct rsi_event cancel_hw_scan_event;
+	struct rsi_event mgmt_cfm_event;
 	struct timer_list scan_timer;
 	bool hw_scan_cancel;
 #endif
-	struct rsi_event mgmt_cfm_event;
 	void *zb_adapter;
 
 	/* 11k related */
@@ -501,7 +502,24 @@ struct rsi_common {
 #else
 	u16 dev_oper_mode;
 #endif
-
+	/* 9116 related */
+	u16 peer_dist;
+	u16 bt_feature_bitmap;
+	u16 uart_debug;
+	u16 ext_opt;
+	u8 host_intf_on_demand;
+	u8 crystal_as_sleep_clk;
+	u16 feature_bitmap_9116;
+	u16 ble_roles;
+	bool three_wire_coex;
+	u16 bt_bdr_mode;
+	u16 anchor_point_gap;
+	u8 bt_rf_type;
+	u8 ble_tx_pwr_inx;
+	u8 ble_pwr_save_options;
+	u8 bt_rf_tx_power_mode;
+	u8 bt_rf_rx_power_mode;
+	u8 load_image_no;
 };
 
 enum host_intf {

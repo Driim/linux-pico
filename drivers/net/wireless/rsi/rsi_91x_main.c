@@ -42,31 +42,112 @@
 #include "rsi_coex.h"
 #endif
 
-u16 rsi_zone_enabled =	/* INFO_ZONE |
+u16 peer_dist;
+u16 bt_feature_bitmap;
+u16 uart_debug;
+/*
+ * Default extended options is (0)
+ */
+u16 ext_opt = 1;
+ /*
+  * Default extended options is
+  * 3 centrals and 1 peripheral
+  */
+u16 ble_roles = (1 << 4 | 3);
+/*
+ * Default BDR and EDR are supported on HP chain
+ */
+u16 bt_bdr_mode;
+/*
+ * Default three wire coex is disabled
+ */
+bool three_wire_coex;
+/*
+ * Default anchor point gap between connected slaves
+ */
+u16 anchor_point_gap = 1;
+/*
+ * Default option for Host Interface on demand is
+ * (1) Enable Host Interface on Demand Feature
+ */
+bool host_intf_on_demand;
+/*
+ * Default sleep clock derivation source is RC clock.
+ */
+bool crystal_as_sleep_clk;
+u16 feature_bitmap_9116;
+u8 bt_rf_type = 0x01;
+u8 ble_tx_pwr_inx =  0x1E;
+u8 ble_pwr_save_options = 0x02;
+u8 bt_rf_tx_power_mode;
+u8 bt_rf_rx_power_mode;
+
+module_param(bt_rf_type, byte, 0);
+module_param(ble_tx_pwr_inx, byte, 0);
+module_param(ble_pwr_save_options, byte, 0);
+module_param(bt_rf_tx_power_mode, byte, 0);
+module_param(bt_rf_rx_power_mode, byte, 0);
+
+module_param(peer_dist, ushort, 0);
+MODULE_PARM_DESC(peer_dist, "\npeer distance to configure ack timeout value\n");
+
+module_param(bt_feature_bitmap, ushort, 0);
+MODULE_PARM_DESC(bt_feature_bitmap, "\nFeature bitmap for BT\n");
+
+module_param(uart_debug, ushort, 0);
+MODULE_PARM_DESC(uart_debug, "\nFeature bitmap for uart debug\n");
+
+module_param(ext_opt, ushort, 0);
+MODULE_PARM_DESC(ext_opt, "\nExtended options - TBD\n");
+
+module_param(ble_roles, ushort, 0);
+MODULE_PARM_DESC(ble_roles, "\nBle Supported Roles BIT[3:0] Max Num of the \
+Central Connections BIT[7:4] Max Num of the Peripheral Connections\n");
+
+module_param(bt_bdr_mode, ushort, 0);
+MODULE_PARM_DESC(bt_bdr_mode, "\nBDR mode selection in classic. BIT(0) 0:BDR \
+and EDR , 1:BDR only mode, BIT(1) 0:BDR HP Chain, 1:BDR LP chain\n");
+
+module_param(three_wire_coex, bool, 0);
+MODULE_PARM_DESC(three_wire_coex, "\nThree wire coex selection. 0:Disable, \
+1:Enable\n");
+
+module_param(anchor_point_gap, ushort, 0);
+MODULE_PARM_DESC(anchor_point_gap, "\nUser configurability of Anchor Point \
+gap between connected slaves\n");
+
+module_param(host_intf_on_demand, bool, 0);
+MODULE_PARM_DESC(host_intf_on_demand, "\nHost Interface on Demand Feature (0) \
+Disable Host Interface on Demand Feature (1) Enable Host Interface on Demand \
+Feature\n");
+
+module_param(crystal_as_sleep_clk, bool, 0);
+MODULE_PARM_DESC(crystal_as_sleep_clk, "\nSleep clock selection (0) RC clock \
+as sleep clock (1) 32KHz crystal as sleep clock\n");
+
+module_param(feature_bitmap_9116, ushort, 0);
+MODULE_PARM_DESC(feature_bitmap_9116, "\n9116 Feature Bitmap BIT(0) 0: AGC_PD \
+Enable, 1: AGC_PD Disable BIT(7:1) Reserved\n");
+
+u16 rsi_zone_enabled =	INFO_ZONE |
 			INIT_ZONE |
 			MGMT_TX_ZONE |
 			MGMT_RX_ZONE |
-			DATA_TX_ZONE |
-			DATA_RX_ZONE |
-			FSM_ZONE |
-			ISR_ZONE | */
+			//DATA_TX_ZONE |
+			//DATA_RX_ZONE |
+			//FSM_ZONE |
+			//ISR_ZONE |
 			ERR_ZONE |
 			0;
 module_param(rsi_zone_enabled, ushort, S_IRUGO);
-MODULE_PARM_DESC(rsi_zone_enabled,
-		 "BIT(0) - ERROR ZONE \
-		  BIT(1) - INFO ZONE \
-		  BIT(2) - INIT ZONE \
-		  BIT(3) - MGMT TX ZONE \
-		  BIT(4) - MGMT RX ZONE \
-		  BIT(5) - DATA TX ZONE \
-		  BIT(6) - DATA RX ZONE \
-		  BIT(7) - FSM ZONE \
-		  BIT(8) - ISR ZONE");
+MODULE_PARM_DESC(rsi_zone_enabled, "\nBIT(0) - ERROR ZONE\n\
+BIT(1) - INFO ZONE\nBIT(2) - INIT ZONE\nBIT(3) - MGMT TX ZONE\n\
+BIT(4) - MGMT RX ZONE\nBIT(5) - DATA TX ZONE\nBIT(6) - DATA RX ZONE\n\
+BIT(7) - FSM ZONE\nBIT(8) - ISR ZONE\n");
 
 /* Default operating mode is Wi-Fi alone */
 int dev_oper_mode_count;
-#if defined(CONFIG_CARACALLA_BOARD) || defined(CONFIG_RSI_PURISM)
+#ifdef CONFIG_CARACALLA_BOARD
 #if defined (CONFIG_RSI_COEX_MODE) || defined(CONFIG_RSI_BT_ALONE)
 u16 dev_oper_mode = DEV_OPMODE_STA_BT_DUAL;
 #else
@@ -86,20 +167,13 @@ module_param_array(dev_oper_mode, ushort, &dev_oper_mode_count, S_IRUGO);
 #else
 module_param(dev_oper_mode, ushort, S_IRUGO);
 #endif
-MODULE_PARM_DESC(dev_oper_mode,
-		 "1 -	Wi-Fi Alone \
-		  4 -	BT Alone \
-		  8 -	BT LE Alone \
-		  12 -	BT classic + BT LE \
-		  5 -	Wi-Fi STA + BT classic \
-		  9 -	Wi-Fi STA + BT LE \
-		  13 -	Wi-Fi STA + BT classic + BT LE \
-		  6 -	AP + BT classic \
-		  14 -	AP + BT classic + BT LE \
-		  16 -	ZIGB ALONE  \
-		  17 -	Wi-Fi STA + ZIGB  \
-		  32 -	ZIGB COORDINATOR  \
-		  48 -	ZIGB ROUTER");
+MODULE_PARM_DESC(dev_oper_mode, "\n1  -	Wi-Fi Alone\n4  -	BT Alone\n\
+8  -	BT LE Alone\n12 -	BT classic + BT LE\n\
+5  -	Wi-Fi STA + BT classic\n9  -	Wi-Fi STA + BT LE\n\
+13 -	Wi-Fi STA + BT classic + BT LE\n\
+6  -	AP + BT classic\n14 -	AP + BT classic + BT LE\n\
+16 -	ZIGB ALONE\n17 -	Wi-Fi STA + ZIGB\n\
+32 -	ZIGB COORDINATOR\n48 -	ZIGB ROUTER\n");
 
 #if defined(CONFIG_RSI_COEX_MODE) && defined(CONFIG_RSI_ZIGB)
 static struct rsi_proto_ops g_proto_ops = {
@@ -496,12 +570,12 @@ struct rsi_hw *rsi_91x_init(void)
 	mutex_init(&common->tx_lock);
 	mutex_init(&common->rx_lock);
 	sema_init(&common->tx_bus_lock, 1);
-	rsi_init_event(&common->mgmt_cfm_event);
 #ifdef CONFIG_HW_SCAN_OFFLOAD
 	rsi_init_event(&common->chan_set_event);
 	rsi_init_event(&common->probe_cfm_event);
 	rsi_init_event(&common->chan_change_event);
 	rsi_init_event(&common->cancel_hw_scan_event);
+	rsi_init_event(&common->mgmt_cfm_event);
 	common->scan_workqueue = 
 		create_singlethread_workqueue("rsi_scan_worker");
 	INIT_WORK(&common->scan_work, rsi_scan_start);
@@ -512,6 +586,23 @@ struct rsi_hw *rsi_91x_init(void)
 #else
 	common->dev_oper_mode = dev_oper_mode;
 #endif
+	common->peer_dist = peer_dist;
+	common->bt_feature_bitmap = bt_feature_bitmap;
+	common->uart_debug = uart_debug;
+	common->ext_opt = ext_opt;
+	common->ble_roles = ble_roles;
+	common->bt_bdr_mode = bt_bdr_mode;
+	common->three_wire_coex = three_wire_coex;
+	common->anchor_point_gap = anchor_point_gap;
+	common->host_intf_on_demand = host_intf_on_demand;
+	common->crystal_as_sleep_clk = crystal_as_sleep_clk;
+	common->feature_bitmap_9116 = feature_bitmap_9116;
+	common->host_intf_on_demand = host_intf_on_demand;
+	common->bt_rf_type = bt_rf_type;
+	common->ble_tx_pwr_inx = ble_tx_pwr_inx;
+	common->ble_pwr_save_options = ble_pwr_save_options;
+	common->bt_rf_tx_power_mode = bt_rf_tx_power_mode;
+	common->bt_rf_rx_power_mode = bt_rf_rx_power_mode; 
 
 	if (rsi_create_kthread(common,
 			       &common->tx_thread,

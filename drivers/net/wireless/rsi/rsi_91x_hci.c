@@ -175,16 +175,8 @@ static int rsi_hci_send_pkt(struct hci_dev *hdev, struct sk_buff *skb)
 #endif
 		kfree_skb(skb);
 		skb = new_skb;
-		if (!IS_ALIGNED((unsigned long)skb->data, RSI_DMA_ALIGN)) {
-			u8 *skb_data = skb->data;
-			int skb_len = skb->len;
-
-			skb_push(skb, RSI_DMA_ALIGN);
-			skb_pull(skb, PTR_ALIGN(skb->data,
-				 RSI_DMA_ALIGN) - skb->data);
-			memmove(skb->data, skb_data, skb_len);
-			skb_trim(skb, skb_len);
-		}
+		if (!IS_ALIGNED((unsigned long)skb->data, RSI_DMA_ALIGN))
+			skb = rsi_get_aligned_skb(skb);
 	}
 
         rsi_hex_dump(DATA_RX_ZONE, "TX BT Pkt", skb->data, skb->len); 
@@ -224,7 +216,6 @@ int rsi_send_rfmode_frame(struct rsi_common *common)
 
 	skb_put(skb, sizeof(struct rsi_bt_rfmode_frame));
 
-//	return rsi_coex_send_pkt(common, skb, RSI_BT_Q);
 	status = common->priv->host_intf_ops->write_pkt(common->priv,
 							skb->data,
 							skb->len);
@@ -282,7 +273,11 @@ int rsi_hci_recv_pkt(struct rsi_common *common, u8 *pkt)
 				"Suspend is in prog; Do not process\n");
 			return 0;
 		}
-
+		if (rsi_send_bt_reg_params(common)) {
+			rsi_dbg(ERR_ZONE,
+				"%s: Failed to write BT reg params\n",
+				__func__);
+		}
 		rsi_dbg(INFO_ZONE, "Attaching HCI module\n");
 
 		if (rsi_hci_attach(common)) {
@@ -297,7 +292,6 @@ int rsi_hci_recv_pkt(struct rsi_common *common, u8 *pkt)
 		rsi_dbg(INFO_ZONE, "BT Device not ready\n");
 		return 0;
 	}
-	
 	if (queue_no == RSI_BT_MGMT_Q) {
 		u8 msg_type = pkt[14] & 0xFF;
 	
@@ -315,7 +309,6 @@ int rsi_hci_recv_pkt(struct rsi_common *common, u8 *pkt)
 			break;
 		}
 	}
-
 	skb = dev_alloc_skb(pkt_len);
 	if (!skb) {
 		rsi_dbg(ERR_ZONE, "%s: Failed to alloc skb\n", __func__);

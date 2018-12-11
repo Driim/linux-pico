@@ -386,12 +386,8 @@ static ssize_t rsi_bgscan_write(struct file *file,
 		mutex_unlock(&common->mutex);
 
 		return total_bytes;
-	} else if (common->bgscan_en) {
-#ifdef PLATFORM_X86
-		rsi_dbg(ERR_ZONE, "bgscan already enabled\n");
-#endif
-		return total_bytes;
-	}
+	} else
+		common->debugfs_bgscan = true;
 
 	/* Return if bgscan is already in progress */
 	if (common->bgscan_en)

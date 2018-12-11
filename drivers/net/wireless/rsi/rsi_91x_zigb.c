@@ -32,7 +32,7 @@
 #include "rsi_main.h"
 #include "rsi_zigb.h"
 
-#define RSI_ZIGB_GENL_FAMILY "Obx-ZIGBgenl"
+#define RSI_ZIGB_GENL_FAMILY "Obx-ZIGB0-genl"
 
 #define RSI_USER_A_MAX	(__RSI_USER_A_MAX - 1)
 #define RSI_VERSION_NR	1
@@ -48,15 +48,6 @@ struct rsi_proto_ops *g_proto_ops;
  */
 static struct nla_policy zigb_genl_policy[RSI_USER_A_MAX + 1] = {
 	[RSI_USER_A_MSG] = { .type = NLA_NUL_STRING },
-};
-
-/* family definition */
-static struct genl_family zigb_genl_family = {
-	.id      = 0,
-	.hdrsize = 0,
-	.name    = RSI_ZIGB_GENL_FAMILY,
-	.version = RSI_VERSION_NR,
-	.maxattr = RSI_USER_A_MAX,
 };
 
 static struct genl_ops zigb_genl_ops = {
@@ -373,11 +364,16 @@ int rsi_zigb_recv_pkt(void *priv, u8 *pkt)
 	return status;
 }
 
+#define ASCII_NUMERIC_OFFSET 48
 int rsi_zigb_attach(void *priv, struct rsi_proto_ops *ops)
 {
 	struct rsi_zb_adapter *zb_adapter;
+#ifdef CONFIG_RSI_MULTI_MODE
+	struct rsi_common *common = (struct rsi_common *)priv;
+#endif
 	struct net_device *dev;
 	struct genl_cb *gcb = NULL;
+	struct genl_family *zigb_genl_family = NULL;
 
 	static const struct net_device_ops zigb_netdev_ops = {
 		.ndo_open           = rsi_zigb_open,
@@ -421,7 +417,27 @@ int rsi_zigb_attach(void *priv, struct rsi_proto_ops *ops)
 	global_gcb = gcb;
 
 	gcb->gc_drvpriv = zb_adapter;
-	gcb->gc_family = &zigb_genl_family;
+	zigb_genl_family = kzalloc(sizeof(*zigb_genl_family), GFP_KERNEL);
+	if(!zigb_genl_family)
+		goto err;
+	/*
+	 * for multiple modules support differentiate the devices with
+	 * unique id, here we have obtained that from the common instance
+	 * id.
+	 */
+#ifdef CONFIG_RSI_MULTI_MODE
+	zigb_genl_family->id = (int)(common->priv->drv_instance_index) - 1;
+#else
+	zigb_genl_family->id = 0;
+#endif
+	zigb_genl_family->hdrsize = 0;
+	strncpy(zigb_genl_family->name, RSI_ZIGB_GENL_FAMILY, GENL_NAMSIZ);
+	/* Below 8th byte differentiates family names. */
+	zigb_genl_family->name[8] = (char)(zigb_genl_family->id +
+					   ASCII_NUMERIC_OFFSET);
+	zigb_genl_family->version = RSI_VERSION_NR;
+	zigb_genl_family->maxattr = RSI_USER_A_MAX;
+	gcb->gc_family = zigb_genl_family;
 	gcb->gc_policy = &zigb_genl_policy[0];
 	gcb->gc_ops = &zigb_genl_ops;
 	gcb->gc_n_ops = 1;
@@ -450,6 +466,9 @@ err:
 		free_netdev(dev);
 	        zb_adapter->dev = NULL;
 	}
+
+	kfree(zigb_genl_family);
+
 	if (gcb) {
 		genl_unregister_family(gcb->gc_family);
 		kfree(gcb);
@@ -477,6 +496,7 @@ void rsi_zigb_detach(void *priv)
 	}
 	if (gcb) {
 		genl_unregister_family(gcb->gc_family);
+		kfree(gcb->gc_family);
 		kfree(gcb);
 	}
 	rsi_zb_dbg(ERR_ZONE, "%s: ZiGB detach done\n", __func__);

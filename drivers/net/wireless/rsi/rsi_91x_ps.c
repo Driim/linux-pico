@@ -113,13 +113,6 @@ EXPORT_SYMBOL_GPL(rsi_default_ps_params);
  */
 void rsi_enable_ps(struct rsi_hw *adapter)
 {
-	if (adapter->ps_state != PS_NONE) {
-		rsi_dbg(ERR_ZONE,
-			"%s: Cannot accept enable PS in %s state\n",
-			__func__, str_psstate(adapter->ps_state));
-		return;
-	}
-
 	if (rsi_send_ps_request(adapter, true)) {
 		rsi_dbg(ERR_ZONE,
 			"%s: Failed to send PS request to device\n",
@@ -139,13 +132,6 @@ void rsi_enable_ps(struct rsi_hw *adapter)
  */
 void rsi_disable_ps(struct rsi_hw *adapter)
 {
-	if (adapter->ps_state != PS_ENABLED) {
-		rsi_dbg(ERR_ZONE,
-			"%s: Cannot accept disable PS in %s state\n",
-			__func__, str_psstate(adapter->ps_state));
-		return;
-	}
-
 	if (rsi_send_ps_request(adapter, false)) {
 		rsi_dbg(ERR_ZONE,
 			"%s: Failed to send PS request to device\n",

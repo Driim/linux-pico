@@ -331,6 +331,10 @@ void rsi_core_qos_processor(struct rsi_common *common)
 			adapter->peer_notify = false;
 			rsi_dbg(INFO_ZONE, "%s RESET PEER_NOTIFY\n", __func__);
 		}
+
+		if (!IS_ALIGNED((unsigned long)skb->data, RSI_DMA_ALIGN))
+			skb = rsi_get_aligned_skb(skb);
+
 #ifdef CONFIG_RSI_COEX_MODE
 		if (q_num == MGMT_BEACON_Q) {
 			status = rsi_send_pkt(common, skb);
@@ -530,13 +534,20 @@ void rsi_core_xmit(struct rsi_common *common, struct sk_buff *skb)
 			tid = IEEE80211_NONQOS_TID;
 			skb->priority = BE_Q;
 		}
-		if (((vif->type == NL80211_IFTYPE_AP) ||
-		     (vif->type == NL80211_IFTYPE_P2P_GO)) &&
-		    (!is_broadcast_ether_addr(wlh->addr1)) &&
+		if ((!is_broadcast_ether_addr(wlh->addr1)) &&
 		    (!is_multicast_ether_addr(wlh->addr1))) {
-			sta = rsi_find_sta(common, wlh->addr1);
-			if (!sta)
-				goto xmit_fail;
+			if (vif->type == NL80211_IFTYPE_AP ||
+			    vif->type == NL80211_IFTYPE_P2P_GO) {
+				sta = rsi_find_sta(common, wlh->addr1);
+				if (!sta)
+					goto xmit_fail;
+				tx_params->sta_id = sta->sta_id;
+			} else if (vif->type == NL80211_IFTYPE_STATION) {
+				sta = &common->stations[RSI_MAX_ASSOC_STAS];
+				if (!sta)
+					goto xmit_fail;
+				tx_params->sta_id = 0;
+			}
 		}
 
 		q_num = skb->priority;
@@ -552,8 +563,13 @@ void rsi_core_xmit(struct rsi_common *common, struct sk_buff *skb)
 #endif
 			tx_params->sta_id = sta->sta_id;
 			
-			/* Start aggregation if not done for this tid */
-			if (!sta->start_tx_aggr[tid]) {
+			/**
+			 * Start aggregation if not done for this tid
+			 * and skip this aggregating Eapol type frames
+			 */
+			if (!sta->start_tx_aggr[tid] &&
+			    !(info->control.flags &
+			      IEEE80211_TX_CTRL_PORT_CTRL_PROTO)) {
 				sta->start_tx_aggr[tid] = true;
 				ieee80211_start_tx_ba_session(sta->sta, tid, 0);
 			}

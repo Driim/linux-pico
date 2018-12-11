@@ -429,10 +429,12 @@ static int rsi_mac80211_hw_scan_start(struct ieee80211_hw *hw,
 				return -EBUSY;
 			}
 		}
-		common->bgscan_info.num_user_channels = scan_req->n_channels;
-		for (ii = 0; ii < scan_req->n_channels; ii++) {
-			common->bgscan_info.user_channels[ii] = 
-				scan_req->channels[ii]->hw_value;
+		if (!common->debugfs_bgscan) {
+			common->bgscan_info.num_user_channels = scan_req->n_channels;
+			for (ii = 0; ii < scan_req->n_channels; ii++) {
+				common->bgscan_info.user_channels[ii] =
+					scan_req->channels[ii]->hw_value;
+			}
 		}
 		if (!rsi_send_bgscan_params(common, 1)) {
 			if (scan_req->n_ssids > MAX_HW_SCAN_SSID) {
@@ -603,12 +605,14 @@ static void rsi_mac80211_tx(struct ieee80211_hw *hw,
 	struct ieee80211_vif *vif = adapter->vifs[adapter->sc_nvifs - 1];
 	struct ieee80211_bss_conf *bss = &adapter->vifs[0]->bss_conf;
 
+#ifndef CONFIG_RSI_P2P
 	if ((memcmp(common->mac_addr, wlh->addr2, ETH_ALEN))) {
 		rsi_dbg(ERR_ZONE,
 			"%s: MAC ID is not found and dropping this packets\n", __func__);
 		ieee80211_free_txskb(common->priv->hw, skb);
 		return;
 	}
+#endif
 
 #ifdef CONFIG_RSI_WOW
 	if (common->wow_flags & RSI_WOW_ENABLED) {
@@ -620,7 +624,7 @@ static void rsi_mac80211_tx(struct ieee80211_hw *hw,
 		ieee80211_free_txskb(common->priv->hw, skb);
 		return;
 	}
-	if ((!bss->assoc) &&
+	if ((!bss->assoc) && (vif->type == NL80211_IFTYPE_AP) &&
 	    (adapter->ps_state == PS_ENABLED))
 		rsi_disable_ps(adapter);
 
@@ -906,7 +910,8 @@ static int rsi_mac80211_change_interface(struct ieee80211_hw *hw,
 	
 	switch (newtype) {
 		case NL80211_IFTYPE_AP:
-			rsi_disable_ps(adapter);
+			if (adapter->ps_state == PS_ENABLED)
+				rsi_disable_ps(adapter);
 			rsi_dbg(INFO_ZONE, "Change to AP Mode\n");
 			intf_mode = AP_OPMODE;
 			break;
@@ -1138,11 +1143,12 @@ static int rsi_mac80211_config(struct ieee80211_hw *hw,
 		unsigned long flags;
 
 		spin_lock_irqsave(&adapter->ps_lock, flags);
-		if (conf->flags & IEEE80211_CONF_PS)
+		if ((conf->flags & IEEE80211_CONF_PS) && (adapter->ps_state == PS_NONE))
 			rsi_enable_ps(adapter);
-		else
+		else if (adapter->ps_state == PS_ENABLED)
 			rsi_disable_ps(adapter);
 		spin_unlock_irqrestore(&adapter->ps_lock, flags);
+
 	}
 
 	/* RTS threshold */
@@ -1998,7 +2004,10 @@ static int rsi_fill_rx_status(struct ieee80211_hw *hw,
 
 	rxs->signal = -(rssi);
 
-	rxs->band = common->band;
+	if (channel >=1 && channel <= 14)
+		rxs->band = NL80211_BAND_2GHZ;
+	else if (channel >= 32 && channel <= 173)
+		rxs->band = NL80211_BAND_5GHZ;
 
 	freq = ieee80211_channel_to_frequency(channel, rxs->band);
 
@@ -2090,6 +2099,8 @@ static int rsi_mac80211_sta_add(struct ieee80211_hw *hw,
 	struct rsi_hw *adapter = hw->priv;
 	struct rsi_common *common = adapter->priv;
 	bool sta_exist = 0;
+	struct rsi_sta *rsta;
+	u8 i;
 
 	rsi_hex_dump(INFO_ZONE, "Station Add", sta->addr, ETH_ALEN);
 
@@ -2097,7 +2108,7 @@ static int rsi_mac80211_sta_add(struct ieee80211_hw *hw,
 
 	if ((vif->type == NL80211_IFTYPE_AP) ||
 	    (vif->type == NL80211_IFTYPE_P2P_GO)) {
-		u8 i, j;
+		u8 j;
 		int free_index = -1;
 
 		/* Check if max stations reached */
@@ -2162,6 +2173,13 @@ static int rsi_mac80211_sta_add(struct ieee80211_hw *hw,
 		common->vif_info[0].sgi = true;
 	}
 	if (vif->type == NL80211_IFTYPE_STATION) {
+		rsta = &common->stations[RSI_MAX_ASSOC_STAS];
+		rsta->sta = sta;
+		rsta->sta_id = 0;
+		for (i = 0; i < IEEE80211_NUM_TIDS; i++)
+			rsta->start_tx_aggr[i] = false;
+		for (i = 0; i < IEEE80211_NUM_ACS; i++)
+			rsta->seq_start[i] = 0;
 		rsi_set_min_rate(hw, sta, common);
 		if (g_bgscan_enable) {
 			if (!rsi_send_bgscan_params(common, 1)) {
@@ -2207,13 +2225,15 @@ static int rsi_mac80211_sta_remove(struct ieee80211_hw *hw,
 	struct rsi_hw *adapter = hw->priv;
 	struct rsi_common *common = adapter->priv;
 	struct ieee80211_bss_conf *bss = &vif->bss_conf;
+	struct rsi_sta *rsta;
+	u8 i;
 
 	rsi_hex_dump(INFO_ZONE, "Station Removed", sta->addr, ETH_ALEN);
 
 	mutex_lock(&common->mutex);
 	if ((vif->type == NL80211_IFTYPE_AP) ||
 	    (vif->type == NL80211_IFTYPE_P2P_GO)) {
-		u8 i, j;
+		u8 j;
 
 		/* Send peer notify to device */
 		rsi_dbg(INFO_ZONE, "Indicate bss status to device\n");
@@ -2239,6 +2259,13 @@ static int rsi_mac80211_sta_remove(struct ieee80211_hw *hw,
 	}
 
 	if (vif->type == NL80211_IFTYPE_STATION) {
+		rsta = &common->stations[RSI_MAX_ASSOC_STAS];
+		if (rsta->sta) {
+			rsta->sta = NULL;
+			rsta->sta_id = -1;
+			for (i = 0; i < IEEE80211_NUM_TIDS; i++)
+				rsta->start_tx_aggr[i] = false;
+		}
 		/* Resetting all the fields to default values */
 		memcpy((u8 *)bss->bssid, (u8 *)sta->addr, ETH_ALEN);
 		bss->qos = sta->wme;
@@ -2505,7 +2532,7 @@ static void rsi_reg_notify(struct wiphy *wiphy,
 		if (common->bgscan_en) {
 			rsi_send_bgscan_params(common, 0);
 			common->bgscan_en = 0;
-			mdelay(10);
+			msleep(10);
 			rsi_send_bgscan_params(common, 1);
 			common->bgscan_en = 1;
 		}
@@ -2625,7 +2652,7 @@ static int rsi_mac80211_suspend(struct ieee80211_hw *hw,
 	struct rsi_common *common = adapter->priv;
 
 	mutex_lock(&common->mutex);
-	if (common->coex_mode > 1)
+	if ((common->coex_mode > 1) && (adapter->ps_state == PS_ENABLED))
 		rsi_disable_ps(adapter);
 
 	if (rsi_config_wowlan(adapter, wowlan)) {
@@ -2880,7 +2907,26 @@ out:
 	return status;
 }
 
+#if (LINUX_VERSION_CODE >= KERNEL_VERSION(4, 1, 0))
+static void rsi_mac80211_event_callback(struct ieee80211_hw *hw,
+					struct ieee80211_vif *vif,
+					const struct ieee80211_event *event)
+{
+	struct rsi_hw *adapter = hw->priv;
+	struct rsi_common *common = adapter->priv;
+	struct ieee80211_bss_conf *bss = &adapter->vifs[0]->bss_conf;
 
+	if (event->type == MLME_EVENT && event->u.mlme.data == ASSOC_EVENT &&
+	    event->u.mlme.status == MLME_TIMEOUT) {
+		rsi_dbg(ERR_ZONE, "%s: ASSOC Timeout: reason = %d\n",
+			__func__, event->u.mlme.reason);
+		rsi_send_sta_notify_frame(common, STA_OPMODE,
+					  STA_DISCONNECTED,
+					  bss->bssid, bss->qos,
+					  bss->aid, 0);
+	}
+}
+#endif
 
 static struct ieee80211_ops mac80211_ops = {
 	.tx = rsi_mac80211_tx,
@@ -2916,6 +2962,9 @@ static struct ieee80211_ops mac80211_ops = {
 #endif
 	.remain_on_channel = rsi_mac80211_roc,
 	.cancel_remain_on_channel = rsi_mac80211_cancel_roc,
+#if (LINUX_VERSION_CODE >= KERNEL_VERSION(4, 1, 0))
+	.event_callback = rsi_mac80211_event_callback,
+#endif
 };
 
 /**
@@ -2956,6 +3005,7 @@ int rsi_mac80211_attach(struct rsi_common *common)
 //	ieee80211_hw_set(hw, CONNECTION_MONITOR);
 	ieee80211_hw_set(hw, SPECTRUM_MGMT);
 	ieee80211_hw_set(hw, MFP_CAPABLE);
+	ieee80211_hw_set(hw, SINGLE_SCAN_ON_ALL_BANDS);
 #else
 	hw->flags = IEEE80211_HW_SIGNAL_DBM |
 		    IEEE80211_HW_HAS_RATE_CONTROL |

@@ -63,8 +63,9 @@ static int rsi_usb_card_write(struct rsi_hw *adapter,
 	int transfer = 0;
 	int ep = dev->bulkout_endpoint_addr[endpoint - 1];
 
-	if ((endpoint == 2) &&
-	    (adapter->priv->zb_fsm_state == ZB_DEVICE_READY)) {
+	if (adapter->priv->zb_fsm_state == ZB_DEVICE_READY &&
+	    (adapter->device_model == RSI_DEV_9116 ?
+	     endpoint == ZIGB_EP : endpoint == DATA_EP)) {
 		memcpy(seg, buf, len);
 	} else {
 		memset(seg, 0, len + 128);
@@ -78,7 +79,7 @@ static int rsi_usb_card_write(struct rsi_hw *adapter,
 			      (void *)seg,
 			      (int)len,
 			      &transfer,
-			      HZ * 5);
+			      TIMEOUT);
 	if (status < 0) {
 		rsi_dbg(ERR_ZONE,
 			"Card write failed with error code :%d\n", status);
@@ -424,9 +425,14 @@ int rsi_usb_host_intf_write_pkt(struct rsi_hw *adapter,
 	u8 endpoint;
 
 	rsi_dbg(DATA_TX_ZONE, "%s: queueno=%d\n", __func__, queueno);
-	endpoint = ((queueno == RSI_WIFI_MGMT_Q || queueno == RSI_COEX_Q ||
-		     queueno == RSI_WIFI_DATA_Q) ?
-		    MGMT_EP : DATA_EP);
+	if (adapter->device_model == RSI_DEV_9116 && queueno == RSI_ZIGB_Q) {
+		endpoint = ZIGB_EP;
+	} else {
+		endpoint = ((queueno == RSI_WIFI_MGMT_Q ||
+			     queueno == RSI_COEX_Q ||
+			     queueno == RSI_WIFI_DATA_Q) ?
+			     MGMT_EP : DATA_EP);
+	}
 
 	return rsi_write_multiple(adapter,
 				  endpoint,

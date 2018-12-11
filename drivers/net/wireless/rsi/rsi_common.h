@@ -32,6 +32,7 @@
 #define __RSI_COMMON_H__
 
 #include <linux/kthread.h>
+#include "rsi_hci.h"
 
 #define EVENT_WAIT_FOREVER              0
 #define QUEUE_NOT_FULL                  1
@@ -93,6 +94,19 @@ static inline int rsi_kill_thread(struct rsi_thread *handle)
 	return kthread_stop(handle->task);
 }
 
+static inline struct sk_buff *rsi_get_aligned_skb(struct sk_buff *skb) {
+	u8 *skb_data = skb->data;
+	int skb_len = skb->len;
+
+	skb_push(skb, RSI_DMA_ALIGN);
+	skb_pull(skb, PTR_ALIGN(skb->data,
+				RSI_DMA_ALIGN) - skb->data);
+	memmove(skb->data, skb_data, skb_len);
+	skb_trim(skb, skb_len);
+
+	return skb;
+}
+
 void rsi_mac80211_detach(struct rsi_hw *hw);
 u16 rsi_get_connected_channel(struct rsi_hw *adapter);
 struct rsi_hw *rsi_91x_init(void);
@@ -100,7 +114,6 @@ void rsi_91x_deinit(struct rsi_hw *adapter);
 int rsi_read_pkt(struct rsi_common *common, u8 *rx_pkt, s32 rcv_pkt_len);
 void rsi_indicate_bcnmiss(struct rsi_common *common);
 void rsi_resume_conn_channel(struct rsi_hw *adapter, struct ieee80211_vif *vif);
-void rsi_hci_detach(struct rsi_common *common);
 char *dot11_pkt_type(__le16 frame_control);
 struct rsi_sta *rsi_find_sta(struct rsi_common *common, u8 *mac_addr);
 void rsi_init_bcn_timer(struct rsi_common *common);
