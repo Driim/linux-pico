@@ -916,7 +916,7 @@
 &i2c3 {
 	clock-frequency = <100000>;
 	pinctrl-names = "default";
-	pinctrl-0 = <&pinctrl_i2c3>;
+	pinctrl-0 = <&pinctrl_i2c3>, <&pinctrl_imu>;
 	status = "okay";
 
 	ov5640_mipi: ov5640_mipi@3c {
@@ -969,6 +969,13 @@
 		VDDA-supply = <&ldo3_reg>;
 	};
 
+        lsm9d: lsm9d@6a {
+                compatible = "st,lsm9ds1-gyro";
+		reg = <0x6a>;
+		interrupt-parent = <&gpio3>;
+		interrupts = <19 IRQ_TYPE_LEVEL_LOW>;
+		power-supply = <&reg_pwr_en>;
+	};
 };
 
 &uart1 { /* console */
