@@ -158,7 +158,7 @@
 	leds {
 		compatible = "gpio-leds";
 		pinctrl-names = "default";
-		pinctrl-0 = <&pinctrl_gpio_leds>, <&pinctrl_mute>, <&pinctrl_micsel>;
+		pinctrl-0 = <&pinctrl_gpio_leds>, <&pinctrl_mute>, <&pinctrl_micsel>, <&pinctrl_pwr_en>;
 		status = "okay";
 
 		led1 {
@@ -265,6 +265,12 @@
 				MX8MQ_IOMUXC_GPIO1_IO06_GPIO1_IO6		0x11  /* CSI_nRST */
 				MX8MQ_IOMUXC_GPIO1_IO07_GPIO1_IO7		0x19  /* CSI_PWDN */
 				MX8MQ_IOMUXC_GPIO1_IO14_CCMSRCGPCMIX_CLKO1	0x19  /* CLK01 */
+			>;
+		};
+
+		pinctrl_pwr_en: pwr_engrp {
+			fsl,pins = <
+				MX8MQ_IOMUXC_GPIO1_IO08_GPIO1_IO8               0x06
 			>;
 		};
 
