@@ -77,22 +77,13 @@
 			enable-active-high;
 			regulator-always-on;
 		};
-		
-		bt_pwr_en: bt_en {
-			compatible = "regulator-fixed";
-			regulator-name = "BT_EN";
-			regulator-min-microvolt = <3300000>;
-			regulator-max-microvolt = <3300000>;
-			gpio = <&gpio3 11 GPIO_ACTIVE_HIGH>;
-			enable-active-high;
-		};
 	};
 
 	modem_reset: modem_reset {
 		compatible = "gpio-reset";
 		pinctrl-names = "default";
 		pinctrl-0 = <&pinctrl_modem_reset>;
-		reset-gpios = <&gpio3 6 GPIO_ACTIVE_LOW>;
+		reset-gpios = <&gpio3 9 GPIO_ACTIVE_LOW>;
 		reset-delay-us = <2000>;
 		reset-post-delay-ms = <40>;
 		#reset-cells = <0>;
@@ -167,7 +158,7 @@
 	leds {
 		compatible = "gpio-leds";
 		pinctrl-names = "default";
-		pinctrl-0 = <&pinctrl_gpio_leds>, <&pinctrl_mute>, <&pinctrl_micsel>;
+		pinctrl-0 = <&pinctrl_gpio_leds>, <&pinctrl_mute>, <&pinctrl_micsel>, <&pinctrl_pwr_en>;
 		status = "okay";
 
 		led1 {
@@ -274,6 +265,12 @@
 				MX8MQ_IOMUXC_GPIO1_IO06_GPIO1_IO6		0x11  /* CSI_nRST */
 				MX8MQ_IOMUXC_GPIO1_IO07_GPIO1_IO7		0x19  /* CSI_PWDN */
 				MX8MQ_IOMUXC_GPIO1_IO14_CCMSRCGPCMIX_CLKO1	0x19  /* CLK01 */
+			>;
+		};
+
+		pinctrl_pwr_en: pwr_engrp {
+			fsl,pins = <
+				MX8MQ_IOMUXC_GPIO1_IO08_GPIO1_IO8               0x06
 			>;
 		};
 
@@ -396,10 +393,17 @@
 			>;
 		};
 
-		pinctrl_modem_reset: modem_resetgrp {
+		pinctrl_bt: btgrp {
 			fsl,pins = <
 				/* BT_REG_ON */
-				MX8MQ_IOMUXC_NAND_DATA00_GPIO3_IO6		0x19
+				MX8MQ_IOMUXC_NAND_DATA05_GPIO3_IO11             0x16  /* nBT_DISABLE */
+				MX8MQ_IOMUXC_NAND_DATA01_GPIO3_IO7              0x10  /* BT_HOST_WAKE */
+				>;
+		};
+
+		pinctrl_modem_reset: modem_reset {
+			fsl,pins = <
+				MX8MQ_IOMUXC_NAND_DATA03_GPIO3_IO9      	0x19    /* WWAN_RESET */
 			>;
 		};
 
@@ -657,6 +661,7 @@
 	phy-handle = <&ethphy0>;
 	fsl,magic-packet;
 	status = "okay";
+	phy-supply = <&reg_pwr_en>;
 
 	mdio {
 		#address-cells = <1>;
@@ -673,7 +678,7 @@
 };
 
 &i2c1 {
-	clock-frequency = <100000>;
+	clock-frequency = <400000>;
 	pinctrl-names = "default";
 	pinctrl-0 = <&pinctrl_i2c1>;
 	status = "okay";
@@ -989,7 +994,7 @@
 
 &uart4 { /* BT */
 	pinctrl-names = "default";
-	pinctrl-0 = <&pinctrl_uart4>;
+	pinctrl-0 = <&pinctrl_uart4>, <&pinctrl_bt>;
 	assigned-clocks = <&clk IMX8MQ_CLK_UART4_SRC>;
 	assigned-clock-parents = <&clk IMX8MQ_CLK_25M>;
 	fsl,uart-has-rtscts;
