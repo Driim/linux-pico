@@ -77,15 +77,6 @@
 			enable-active-high;
 			regulator-always-on;
 		};
-		
-		bt_pwr_en: bt_en {
-			compatible = "regulator-fixed";
-			regulator-name = "BT_EN";
-			regulator-min-microvolt = <3300000>;
-			regulator-max-microvolt = <3300000>;
-			gpio = <&gpio3 11 GPIO_ACTIVE_HIGH>;
-			enable-active-high;
-		};
 	};
 
 	modem_reset: modem_reset {
@@ -394,6 +385,14 @@
 				MX8MQ_IOMUXC_ECSPI2_SS0_UART4_DCE_RTS_B		0x49
 				MX8MQ_IOMUXC_GPIO1_IO00_ANAMIX_REF_CLK_32K	0x49
 			>;
+		};
+
+		pinctrl_bt: btgrp {
+			fsl,pins = <
+				/* BT_REG_ON */
+				MX8MQ_IOMUXC_NAND_DATA05_GPIO3_IO11             0x16  /* nBT_DISABLE */
+				MX8MQ_IOMUXC_NAND_DATA01_GPIO3_IO7              0x10  /* BT_HOST_WAKE */
+				>;
 		};
 
 		pinctrl_modem_reset: modem_reset {
@@ -989,7 +988,7 @@
 
 &uart4 { /* BT */
 	pinctrl-names = "default";
-	pinctrl-0 = <&pinctrl_uart4>;
+	pinctrl-0 = <&pinctrl_uart4>, <&pinctrl_bt>;
 	assigned-clocks = <&clk IMX8MQ_CLK_UART4_SRC>;
 	assigned-clock-parents = <&clk IMX8MQ_CLK_25M>;
 	fsl,uart-has-rtscts;
