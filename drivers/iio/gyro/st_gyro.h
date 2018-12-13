@@ -23,6 +23,7 @@
 #define L3G4IS_GYRO_DEV_NAME		"l3g4is_ui"
 #define LSM330_GYRO_DEV_NAME		"lsm330_gyro"
 #define LSM9DS0_GYRO_DEV_NAME		"lsm9ds0_gyro"
+#define LSM9DS1_GYRO_DEV_NAME		"lsm9ds1_gyro"
 
 /**
  * struct st_sensors_platform_data - gyro platform data

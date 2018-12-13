@@ -56,6 +56,23 @@ static const struct iio_chan_spec st_gyro_16bit_channels[] = {
 	IIO_CHAN_SOFT_TIMESTAMP(3)
 };
 
+/* The LSM9DS1 uses different output registers that the other chips. */
+static const struct iio_chan_spec st_gyro_lsm9ds1_16bit_channels[] = {
+	ST_SENSORS_LSM_CHANNELS(IIO_ANGL_VEL,
+			BIT(IIO_CHAN_INFO_RAW) | BIT(IIO_CHAN_INFO_SCALE),
+			ST_SENSORS_SCAN_X, 1, IIO_MOD_X, 's', IIO_LE, 16, 16,
+			0x18),
+	ST_SENSORS_LSM_CHANNELS(IIO_ANGL_VEL,
+			BIT(IIO_CHAN_INFO_RAW) | BIT(IIO_CHAN_INFO_SCALE),
+			ST_SENSORS_SCAN_Y, 1, IIO_MOD_Y, 's', IIO_LE, 16, 16,
+			0x1a),
+	ST_SENSORS_LSM_CHANNELS(IIO_ANGL_VEL,
+			BIT(IIO_CHAN_INFO_RAW) | BIT(IIO_CHAN_INFO_SCALE),
+			ST_SENSORS_SCAN_Z, 1, IIO_MOD_Z, 's', IIO_LE, 16, 16,
+			0x1c),
+	IIO_CHAN_SOFT_TIMESTAMP(3)
+};
+
 static const struct st_sensor_settings st_gyro_sensors_settings[] = {
 	{
 		.wai = 0xd3,
@@ -283,6 +300,84 @@ static const struct st_sensor_settings st_gyro_sensors_settings[] = {
 			.value = BIT(0),
 		},
 		.multi_read_bit = true,
+		.bootime = 2,
+	},
+	{
+		.wai = 0x68,
+		.wai_addr = ST_SENSORS_DEFAULT_WAI_ADDRESS,
+		.sensors_supported = {
+			[0] = LSM9DS1_GYRO_DEV_NAME,
+		},
+		.ch = (struct iio_chan_spec *)st_gyro_lsm9ds1_16bit_channels,
+		.odr = {
+			.addr = 0x10,
+			.mask = 0xe0,
+			.odr_avl = {
+				{ .hz = 15, .value = 0x01, },
+				{ .hz = 60, .value = 0x02, },
+				{ .hz = 119, .value = 0x03, },
+				{ .hz = 238, .value = 0x04, },
+				{ .hz = 476, .value = 0x05, },
+				{ .hz = 952, .value = 0x06, },
+			},
+		},
+		.pw = {
+			.addr = 0x10,
+			.mask = 0xe0,
+			.value_on = ST_SENSORS_DEFAULT_POWER_ON_VALUE,
+			.value_off = ST_SENSORS_DEFAULT_POWER_OFF_VALUE,
+		},
+		.enable_axis = {
+			.addr = 0x1e,
+			.mask = 0x38,
+		},
+		.fs = {
+			.addr = 0x10,
+			.mask = 0x38,
+			.fs_avl = {
+				[0] = {
+					.num = ST_GYRO_FS_AVL_250DPS,
+					.value = 0x00,
+					.gain = IIO_DEGREE_TO_RAD(8750),
+				},
+				[1] = {
+					.num = ST_GYRO_FS_AVL_500DPS,
+					.value = 0x01,
+					.gain = IIO_DEGREE_TO_RAD(17500),
+				},
+				[2] = {
+					.num = ST_GYRO_FS_AVL_2000DPS,
+					/* 2 is "Not Available". */
+					.value = 0x03,
+					.gain = IIO_DEGREE_TO_RAD(70000),
+				},
+			},
+		},
+		.bdu = {
+			.addr = 0x22,
+			.mask = 0x40,
+		},
+		.drdy_irq = {
+			.int1 = {
+				.addr = 0x0c,
+				.mask = 0x02,
+			},
+			.int2 = {
+				.addr = 0x0d,
+				.mask = 0x02,
+			},
+			.addr_ihl = 0x22,
+			.mask_ihl = 0x20,
+			.stat_drdy = {
+				.addr = ST_SENSORS_DEFAULT_STAT_ADDR,
+				.mask = 0x02,
+			},
+		},
+		.sim = {
+			.addr = 0x22,
+			.value = BIT(3),
+		},
+		.multi_read_bit = false,
 		.bootime = 2,
 	},
 };
