@@ -92,7 +92,7 @@
 		compatible = "gpio-reset";
 		pinctrl-names = "default";
 		pinctrl-0 = <&pinctrl_modem_reset>;
-		reset-gpios = <&gpio3 6 GPIO_ACTIVE_LOW>;
+		reset-gpios = <&gpio3 9 GPIO_ACTIVE_LOW>;
 		reset-delay-us = <2000>;
 		reset-post-delay-ms = <40>;
 		#reset-cells = <0>;
@@ -396,10 +396,9 @@
 			>;
 		};
 
-		pinctrl_modem_reset: modem_resetgrp {
+		pinctrl_modem_reset: modem_reset {
 			fsl,pins = <
-				/* BT_REG_ON */
-				MX8MQ_IOMUXC_NAND_DATA00_GPIO3_IO6		0x19
+				MX8MQ_IOMUXC_NAND_DATA03_GPIO3_IO9      	0x19    /* WWAN_RESET */
 			>;
 		};
 
