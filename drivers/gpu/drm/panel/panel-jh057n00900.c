@@ -18,23 +18,23 @@
 /* The Rockteck jh057n00900 uses a Sitronix ST7703 */
 
 /* Manufacturer Command Set */
-#define ST_SETDISP   0xB2    /* display resolution */
-#define ST_SETRGBIF  0xB3    /* porch adjustment */
-#define ST_SETCYC    0xB4    /* display inversion type */
-#define ST_SETBGP    0xB5    /* Reference Voltage */
-#define ST_SETVCOM   0xB6    /* VCom */
-#define ST_SETOTP    0xB7
-#define ST_SETPOWER_EXT 0xB8
-#define ST_SETEXTC  0xB9
-#define ST_SETMIPI  0xBA
-#define ST_SETVDC   0xBC
-#define ST_SETSCR   0xC0
-#define ST_SETPOWER 0xC1
-#define ST_SETPANEL 0xCC
-#define ST_SETGAMMA 0xE0
-#define ST_SETEQ    0xE3
-#define ST_SETGIP1  0xE9
-#define ST_SETGIP2  0xEA
+#define ST7703_CMD_SETDISP  0xB2    /* display resolution */
+#define ST7703_CMD_SETRGBIF 0xB3    /* porch adjustment */
+#define ST7703_CMD_SETCYC   0xB4    /* display inversion type */
+#define ST7703_CMD_SETBGP   0xB5    /* Reference Voltage */
+#define ST7703_CMD_SETVCOM  0xB6    /* VCom */
+#define ST7703_CMD_SETOTP   0xB7
+#define ST7703_CMD_SETPOWER_EXT 0xB8
+#define ST7703_CMD_SETEXTC  0xB9
+#define ST7703_CMD_SETMIPI  0xBA
+#define ST7703_CMD_SETVDC   0xBC
+#define ST7703_CMD_SETSCR   0xC0
+#define ST7703_CMD_SETPOWER 0xC1
+#define ST7703_CMD_SETPANEL 0xCC
+#define ST7703_CMD_SETGAMMA 0xE0
+#define ST7703_CMD_SETEQ    0xE3
+#define ST7703_CMD_SETGIP1  0xE9
+#define ST7703_CMD_SETGIP2  0xEA
 
 struct jh057n {
 	struct device *dev;
@@ -45,21 +45,22 @@ struct jh057n {
 };
 
 static const struct drm_display_mode default_mode = {
-	.hdisplay = 720,
-	.vdisplay = 1440,
-	/* From panel vendor */
-	.hsync_start = 720 + 50 /* front porch */,
-	.hsync_end   = 720 + 50 + 10 /* sync_len */,
-	.htotal      = 720 + 50 + 10 + 50 /* back porch */,
-	.vsync_start = 1440 + 17 /* front porch */,
-	.vsync_end   = 1440 + 17 + 4 /* sync_len */,
-	.vtotal      = 1440 + 17 + 4 + 21 /* back porch */,
-	.vrefresh = 60, /* guessed */
-	/* (720 + 50 + 10 + 50)*(1440 + 17 + 4 + 21)* 60/1000 */
-	.clock       = 73803, /* kHz */
-	.flags = 0 /* DRM_MODE_FLAG_NHSYNC | DRM_MODE_FLAG_NVSYNC */,
-	.width_mm = 65,
-	.height_mm = 130,
+	.hdisplay    = 720,
+	.hsync_start = 720 + 40 /* front porch */,
+	.hsync_end   = 720 + 40 + 10 /* sync_len */,
+	.htotal      = 720 + 40 + 10 + 45 /* back porch */,
+	.vdisplay    = 1440,
+	.vsync_start = 1440 + 10 /* front porch */,
+	.vsync_end   = 1440 + 10 + 4 /* sync_len */,
+	.vtotal      = 1440 + 10 + 4 + 11 /* back porch */,
+	.vrefresh    = 60, /* confirmed from qualcom XML */
+	/* htotal * vtotal * vrefresh / 1000 */
+	/* actually 71638 but then we can't use best_match=false in mixel_phy_mipi_set_phy_speed
+	   so let's use this for now to be on the safe side */
+	.clock       = 72000, /* kHz */
+	.flags       = DRM_MODE_FLAG_NHSYNC | DRM_MODE_FLAG_NVSYNC,
+	.width_mm    = 65,
+	.height_mm   = 130,
 };
 
 
@@ -73,8 +74,6 @@ static void jh057n_dcs_write_buf(struct jh057n *ctx, const void *data,
 {
 	struct mipi_dsi_device *dsi = to_mipi_dsi_device(ctx->dev);
 
-	/* HACK, needed?? */
-	msleep(5);
 	if (mipi_dsi_generic_write(dsi, data, len) < 0)
 		DRM_DEV_ERROR(ctx->dev, "mipi dsi dcs write buffer failed\n");
 }
@@ -115,47 +114,48 @@ static int jh057n_init_sequence(struct jh057n *ctx)
 	u8 out[1] = { 0 };
 
 	msleep(200);
+
 	/* Enable user command */
-	dcs_write_seq(ctx, ST_SETEXTC, 0xF1, 0x12, 0x83);
+	dcs_write_seq(ctx, ST7703_CMD_SETEXTC, /* 3 */
+		      0xF1, 0x12, 0x83);
 	/* 6 params in ST7703 docs */
-	dcs_write_seq(ctx, ST_SETMIPI, /* 27 */
-		      0x33, 0x81, 0x05, 0xF9, 0x0e, 0x0e, 0x20, 0x00,
+	dcs_write_seq(ctx, ST7703_CMD_SETMIPI, /* 27 */
+		      0x33, 0x81, 0x05, 0xF9, 0x0E, 0x0E, 0x20, 0x00,
 		      0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x44, 0x25,
-		      0x00, 0x91, 0x0a, 0x00, 0x00, 0x02, 0x4F, 0x11,
+		      0x00, 0x91, 0x0A, 0x00, 0x00, 0x02, 0x4F, 0x11,
 		      0x00, 0x00, 0x37);
 	/* 6 params in ST7703 docs */
-	dcs_write_seq(ctx, ST_SETPOWER_EXT, /* 4 */
+	dcs_write_seq(ctx, ST7703_CMD_SETPOWER_EXT, /* 4 */
 		      0x76, 0x22, 0x20, 0x03);
 	/* 4 params in ST7703 docs */
-	dcs_write_seq(ctx, ST_SETRGBIF, /* 10 */
+	dcs_write_seq(ctx, ST7703_CMD_SETRGBIF, /* 10 */
 		      0x10, 0x10, 0x05, 0x05, 0x03, 0xFF, 0x00, 0x00,
 		      0x00, 0x00);
 	/* 8 params in ST7703 docs */
-	dcs_write_seq(ctx, ST_SETSCR, /* 9 */
+	dcs_write_seq(ctx, ST7703_CMD_SETSCR, /* 9 */
 		      0x73, 0x73, 0x50, 0x50, 0x00, 0x00, 0x08, 0x70,
 		      0x00);
 	/* -1.6V & + 1.9V */
-	dcs_write_seq(ctx, ST_SETVDC, 0x4E);
+	dcs_write_seq(ctx, ST7703_CMD_SETVDC, 0x4E);
 	/* SS_PANEL, REV_PANEL, BGR_PANEL */
-	dcs_write_seq(ctx, ST_SETPANEL, 0x0B);
+	dcs_write_seq(ctx, ST7703_CMD_SETPANEL, 0x0B);
 	/* 2 params in ST7703 docs */
-	dcs_write_seq(ctx, ST_SETCYC, 0x80);
+	dcs_write_seq(ctx, ST7703_CMD_SETCYC, 0x80);
 	/* weird values, e.g. a 720 panel has BIT(1) 3rd param */
-	dcs_write_seq(ctx, ST_SETDISP, 0xF0, 0x12, 0x30);
-	dcs_write_seq(ctx, ST_SETEQ, /* 14 */
+	dcs_write_seq(ctx, ST7703_CMD_SETDISP, 0xF0, 0x12, 0x30);
+	dcs_write_seq(ctx, ST7703_CMD_SETEQ, /* 14 */
 		      0x07, 0x07, 0x0B, 0x0B, 0x03, 0x0B, 0x00, 0x00,
 		      0x00, 0x00, 0xFF, 0x00, 0xC0, 0x10);
-	/* 16 params in ST7703 docs */
-	dcs_write_seq(ctx, ST_SETPOWER, /* 12 */
+	dcs_write_seq(ctx, ST7703_CMD_SETPOWER, /* 12 */
 		      0x54, 0x00, 0x1E, 0x1E, 0x77, 0xF1, 0xFF, 0xFF,
 		      0xCC, 0xCC, 0x77, 0x77);
-	/* ± 4.2 V */
-	dcs_write_seq(ctx, ST_SETBGP, 0x07, 0x07);
-	/* ± 0.6 V */
-	dcs_write_seq(ctx, ST_SETVCOM, 0x25, 0x25);
+	/* setbgp is different from our first data set*/
+	dcs_write_seq(ctx, ST7703_CMD_SETBGP, 0x08, 0x08);
+	/* setvcom is different from our first data set*/
+	dcs_write_seq(ctx, ST7703_CMD_SETVCOM, 0x28, 0x28);
 	/* undocumented */
 	dcs_write_seq(ctx, 0xBF, 0x02, 0x11, 0x00);
-	dcs_write_seq(ctx, ST_SETGIP1, /* 63 */
+	dcs_write_seq(ctx, ST7703_CMD_SETGIP1, /* 63 */
 		      0x82, 0x10, 0x06, 0x05, 0x9E, 0x0A, 0xA5, 0x12,
 		      0x31, 0x23, 0x37, 0x83, 0x04, 0xBC, 0x27, 0x38,
 		      0x0C, 0x00, 0x03, 0x00, 0x00, 0x00, 0x0C, 0x00,
@@ -165,7 +165,7 @@ static int jh057n_init_sequence(struct jh057n *ctx)
 		      0x02, 0x88, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
 		      0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00);
 	/* 39 parameters accordin to ST7703 docs */
-	dcs_write_seq(ctx, ST_SETGIP2, /* 61 */
+	dcs_write_seq(ctx, ST7703_CMD_SETGIP2, /* 61 */
 		      0x02, 0x21, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
 		      0x00, 0x00, 0x00, 0x00, 0x02, 0x46, 0x02, 0x88,
 		      0x88, 0x88, 0x88, 0x88, 0x88, 0x64, 0x88, 0x13,
@@ -174,20 +174,21 @@ static int jh057n_init_sequence(struct jh057n *ctx)
 		      0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
 		      0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x30, 0x0A,
 		      0xA5, 0x00, 0x00, 0x00, 0x00);
-	dcs_write_seq(ctx, ST_SETGAMMA, /* 34 */
+	dcs_write_seq(ctx, ST7703_CMD_SETGAMMA, /* 34 */
 		      0x00, 0x09, 0x0E, 0x29, 0x2D, 0x3C, 0x41, 0x37,
 		      0x07, 0x0B, 0x0D, 0x10, 0x11, 0x0F, 0x10, 0x11,
 		      0x18, 0x00, 0x09, 0x0E, 0x29, 0x2D, 0x3C, 0x41,
 		      0x37, 0x07, 0x0B, 0x0D, 0x10, 0x11, 0x0F, 0x10,
 		      0x11, 0x18);
-	msleep(200); /* docs say nothing here */
+
+	msleep(78); /* docs say nothing here */
 
 	ret = mipi_dsi_dcs_exit_sleep_mode(dsi);
 	if (ret < 0) {
 		DRM_DEV_ERROR(dev, "Failed to exit sleep mode");
 		return ret;
 	}
-	msleep(200); /* docs say 120ms */
+	msleep(150); /* docs say 120ms */
 
 #if 0
 	/* This fails if we do more than the first "enter user mode" command and if fails
@@ -204,7 +205,7 @@ static int jh057n_init_sequence(struct jh057n *ctx)
 	if (ret)
 		return ret;
 
-	msleep(200); /* docs say 5ms, vendor uses 120 ms */
+	msleep(120); /* docs say 5ms, vendor uses 120 ms */
 
 	DRM_DEV_DEBUG_DRIVER (dev, "Panel init sequence done");
 	return 0;
@@ -242,8 +243,14 @@ static int jh057n_unprepare(struct drm_panel *panel)
 		return 0;
 
 	if (ctx->reset_gpio) {
+		gpiod_set_value_cansleep(ctx->reset_gpio, 0);
 		gpiod_set_value_cansleep(ctx->reset_gpio, 1);
-		msleep(20);
+		usleep_range(20, 40); /* docs say 20 usec */
+		gpiod_set_value_cansleep(ctx->reset_gpio, 0);
+		msleep(140); /* docs say 120 msec */
+	} else {
+		DRM_DEV_DEBUG_DRIVER(ctx->dev, "No reset gpio found");
+		return -EINVAL;
 	}
 
 	ctx->prepared = false;
@@ -260,11 +267,14 @@ static int jh057n_prepare(struct drm_panel *panel)
 		return 0;
 
 	if (ctx->reset_gpio) {
-		gpiod_set_value_cansleep(ctx->reset_gpio, 0);
+		DRM_DEV_DEBUG_DRIVER(ctx->dev, "Resetting the panel.");
 		gpiod_set_value_cansleep(ctx->reset_gpio, 1);
-		msleep(200); /* docs say 120 msec */
+		usleep_range(20, 40); /* docs say 20 usec */
 		gpiod_set_value_cansleep(ctx->reset_gpio, 0);
-		msleep(100);
+		msleep(140); /* docs say 120 msec */
+	} else {
+		DRM_DEV_DEBUG_DRIVER(ctx->dev, "No reset gpio found");
+		return -EINVAL;
 	}
 
 	ret = jh057n_init_sequence(ctx);
@@ -336,7 +346,7 @@ static int jh057n_probe(struct mipi_dsi_device *dsi)
 	if (!ctx)
 		return -ENOMEM;
 
-	ctx->reset_gpio = devm_gpiod_get_optional(dev, "reset", GPIOD_OUT_LOW);
+	ctx->reset_gpio = devm_gpiod_get(dev, "reset", GPIOD_OUT_LOW);
 	if (IS_ERR(ctx->reset_gpio)) {
 		DRM_DEV_ERROR(dev, "cannot get reset gpio");
 		return PTR_ERR(ctx->reset_gpio);
@@ -348,10 +358,9 @@ static int jh057n_probe(struct mipi_dsi_device *dsi)
 
 	dsi->lanes = 4;
 	dsi->format = MIPI_DSI_FMT_RGB888;
-	dsi->mode_flags = MIPI_DSI_MODE_VIDEO
-		/* p.184 of ST7703 */
-	        | MIPI_DSI_MODE_VIDEO_BURST
-		/* the st7703 support LPM and HSM */
+	dsi->mode_flags = MIPI_DSI_MODE_VIDEO         /* mdss-dsi-panel-type */
+	        | MIPI_DSI_MODE_VIDEO_BURST           /* mdss-dsi-traffic-mode */
+		/* the st7703 supports LPM and HSM */
 		| MIPI_DSI_MODE_LPM
 		/* transition into LP between transmissions */
 		| MIPI_DSI_CLOCK_NON_CONTINUOUS

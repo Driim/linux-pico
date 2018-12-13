@@ -12,6 +12,8 @@
  * for more details.
  */
 
+#include <linux/clk.h>
+#include <linux/clk-provider.h>
 #include <linux/delay.h>
 #include <linux/io.h>
 #include <linux/kernel.h>
@@ -75,6 +77,8 @@ struct mixel_mipi_phy_priv {
 	struct pll_divider divider;
 	struct mutex	lock;
 	unsigned long	data_rate;
+	struct clk_hw	dsi_clk;
+	unsigned long	frequency;
 };
 
 struct devtype {
@@ -95,6 +99,114 @@ static inline void phy_write(struct phy *phy, u32 value, unsigned int reg)
 	writel(value, priv->base + reg);
 }
 
+#ifdef CONFIG_COMMON_CLK
+#define dsi_clk_to_data(_hw) container_of(_hw, struct mixel_mipi_phy_priv, dsi_clk)
+
+static unsigned long mixel_dsi_clk_recalc_rate(struct clk_hw *hw,
+					    unsigned long parent_rate)
+{
+	return dsi_clk_to_data(hw)->frequency;
+}
+
+static long mixel_dsi_clk_round_rate(struct clk_hw *hw, unsigned long rate,
+				  unsigned long *prate)
+{
+	return dsi_clk_to_data(hw)->frequency;
+}
+
+static int mixel_dsi_clk_set_rate(struct clk_hw *hw, unsigned long rate,
+			       unsigned long parent_rate)
+{
+	return 0;
+}
+
+static int mixel_dsi_clk_prepare(struct clk_hw *hw)
+{
+	return 0;
+}
+
+static void mixel_dsi_clk_unprepare(struct clk_hw *hw)
+{
+	return;
+}
+
+static int mixel_dsi_clk_is_prepared(struct clk_hw *hw)
+{
+	struct mixel_mipi_phy_priv *priv = dsi_clk_to_data(hw);
+
+	if (priv->divider.cm < 16 || priv->divider.cm > 255 ||
+		priv->divider.cn < 1 || priv->divider.cn > 32 ||
+		priv->divider.co < 1 || priv->divider.co > 8)
+		return 0;
+	return 1;
+}
+
+static const struct clk_ops mixel_dsi_clk_ops = {
+	.prepare = mixel_dsi_clk_prepare,
+	.unprepare = mixel_dsi_clk_unprepare,
+	.is_prepared = mixel_dsi_clk_is_prepared,
+	.recalc_rate = mixel_dsi_clk_recalc_rate,
+	.round_rate = mixel_dsi_clk_round_rate,
+	.set_rate = mixel_dsi_clk_set_rate,
+};
+
+static struct clk *mixel_dsi_clk_register_clk(struct mixel_mipi_phy_priv *priv)
+{
+	struct clk *clk;
+	struct clk_init_data init;
+
+	init.name = "mixel-dsi-clk";
+	init.ops = &mixel_dsi_clk_ops;
+	init.flags = 0;
+	init.parent_names = NULL;
+	init.num_parents = 0;
+	priv->dsi_clk.init = &init;
+
+	/* optional override of the clockname */
+	of_property_read_string(priv->dev->of_node, "clock-output-names", &init.name);
+
+	/* register the clock */
+	clk = clk_register(priv->dev, &priv->dsi_clk);
+	if (!IS_ERR(clk))
+		of_clk_add_provider(priv->dev->of_node, of_clk_src_simple_get, clk);
+
+	return clk;
+}
+#endif
+
+/*
+ * continued fraction
+ *      2  1  2  1  2
+ * 0 1  2  3  8 11 30
+ * 1 0  1  1  3  4 11
+ */
+static void get_best_ratio(unsigned long *pnum, unsigned long *pdenom, unsigned max_n, unsigned max_d)
+{
+	unsigned long a = *pnum;
+	unsigned long b = *pdenom;
+	unsigned long c;
+	unsigned n[] = {0, 1};
+	unsigned d[] = {1, 0};
+	unsigned whole;
+	unsigned i = 1;
+	while (b) {
+		i ^= 1;
+		whole = a / b;
+		n[i] += (n[i ^ 1] * whole);
+		d[i] += (d[i ^ 1] * whole);
+//		printf("cf=%i n=%i d=%i\n", whole, n[i], d[i]);
+		if ((n[i] > max_n) || (d[i] > max_d)) {
+			i ^= 1;
+			break;
+		}
+		c = a - (b * whole);
+		a = b;
+		b = c;
+	}
+	*pnum = n[i];
+	*pdenom = d[i];
+}
+
 /*
  * mixel_phy_mipi_set_phy_speed:
  * Input params:
@@ -111,54 +223,50 @@ int mixel_phy_mipi_set_phy_speed(struct phy *phy,
 				 bool best_match)
 {
 	struct mixel_mipi_phy_priv *priv = dev_get_drvdata(phy->dev.parent);
-	u32 div_rate;
-	u32 numerator = 0;
-	u32 denominator = 1;
+	int i;
+	unsigned long numerator;
+	unsigned long denominator;
+	unsigned max_d = 256;
 
 	if (bit_clk > DATA_RATE_MAX_SPEED || bit_clk < DATA_RATE_MIN_SPEED)
 		return -EINVAL;
 
-	/* simulated fixed point with 3 decimals */
-	div_rate = (bit_clk * 1000) / ref_clk;
-
-	while (denominator <= 256) {
-		if (div_rate % 1000 == 0)
-			numerator = div_rate / 1000;
-		if (numerator > 15)
-			break;
-		denominator = denominator << 1;
-		div_rate = div_rate << 1;
-	}
-
 	/* CM ranges between 16 and 255 */
 	/* CN ranges between 1 and 32 */
 	/* CO is power of 2: 1, 2, 4, 8 */
-	if (best_match && numerator < 16)
-		numerator = div_rate / 1000;
+	do {
+		numerator = bit_clk;
+		denominator = ref_clk;
+		get_best_ratio(&numerator, &denominator, 255, max_d);
+		max_d >>= 1;
+	} while ((denominator >> __ffs(denominator)) > 32);
 
-	if (best_match && numerator > 255) {
-		while (numerator > 255 && denominator > 1) {
-			numerator = DIV_ROUND_UP(numerator, 2);
-			denominator = denominator >> 1;
-		}
+	while ((numerator < 16) && (denominator <= 128)) {
+		numerator = numerator << 1;
+		denominator = denominator << 1;
 	}
+	pr_debug("%s: %ld/%ld = %ld/%ld\n", __func__, numerator, denominator, bit_clk, ref_clk);
 
-	if (numerator < 16 || numerator > 255)
+	if (numerator < 16 || numerator > 255 || !denominator) {
+		pr_info("%s: bit_clk=%ld ref_clk=%ld, numerator=%ld, denominator=%ld\n",
+			__func__, bit_clk, ref_clk, numerator, denominator);
 		return -EINVAL;
-
-	if (best_match)
-		numerator = DIV_ROUND_UP(numerator, denominator) * denominator;
-
-	priv->divider.cn = 1;
-	if (denominator > 8) {
-		priv->divider.cn = denominator >> 3;
-		denominator = 8;
 	}
-	priv->divider.co = denominator;
+
+	i = __ffs(denominator);
+	if (i > 3)
+		i = 3;
+	priv->divider.cn = denominator >> i;
+	priv->divider.co = 1 << i;
 	priv->divider.cm = numerator;
 
 	priv->data_rate = bit_clk;
-
+	/* Divided by 2 because mipi output clock is DDR */
+	priv->frequency = ref_clk * numerator / (2 * denominator);
+	if (priv->dsi_clk.clk)
+		clk_set_rate(priv->dsi_clk.clk, priv->frequency);
+	pr_info("%s:%ld,%ld, ref_clk=%ld numerator=%ld, denominator=%ld\n",
+		__func__, priv->frequency, bit_clk, ref_clk, numerator, denominator);
 	return 0;
 }
 EXPORT_SYMBOL_GPL(mixel_phy_mipi_set_phy_speed);
@@ -245,7 +353,7 @@ static void mixel_phy_set_prg_regs(struct phy *phy)
 	}
 }
 
-int mixel_mipi_phy_init(struct phy *phy)
+static int mixel_mipi_phy_init(struct phy *phy)
 {
 	struct mixel_mipi_phy_priv *priv = dev_get_drvdata(phy->dev.parent);
 
@@ -407,6 +515,9 @@ static int mixel_mipi_phy_probe(struct platform_device *pdev)
 	phy_set_drvdata(phy, priv);
 
 	phy_provider = devm_of_phy_provider_register(dev, of_phy_simple_xlate);
+#ifdef CONFIG_COMMON_CLK
+	mixel_dsi_clk_register_clk(priv);
+#endif
 
 	return PTR_ERR_OR_ZERO(phy_provider);
 }
