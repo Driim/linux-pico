@@ -16,3 +16,4 @@ dtb-$(CONFIG_ARCH_LAYERSCAPE) += fsl-ls2088a-rdb.dtb
 
 dtb-$(CONFIG_SOC_IMX8MQ) += emcraft-imx8-som.dtb
 dtb-$(CONFIG_SOC_IMX8MQ) += librem5-evk.dtb
+dtb-$(CONFIG_SOC_IMX8MQ) += librem5-evk-lcdonly.dtb
