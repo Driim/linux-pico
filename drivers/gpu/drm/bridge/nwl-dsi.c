@@ -458,8 +458,11 @@ static void nwl_dsi_init_interrupts(struct nwl_mipi_dsi *dsi)
 	nwl_dsi_write(dsi, IRQ_MASK, 0xffffffff);
 	nwl_dsi_write(dsi, IRQ_MASK2, 0x7);
 
-	irq_enable = ~(u32)(TX_PKT_DONE_MASK |
-			RX_PKT_HDR_RCVD_MASK);
+	irq_enable = ~(u32)(TX_PKT_DONE_MASK
+			    | RX_PKT_HDR_RCVD_MASK
+			    | TX_FIFO_OVFLW_MASK
+			    | HS_TX_TIMEOUT_MASK
+		);
 
 	nwl_dsi_write(dsi, IRQ_MASK, irq_enable);
 }
@@ -735,6 +738,16 @@ static void nwl_dsi_finish_transmission(struct nwl_mipi_dsi *dsi, u32 status)
 	if (!xfer)
 		return;
 
+	if (status & TX_FIFO_OVFLW) {
+		DRM_DEV_ERROR_RATELIMITED(dsi->dev, "tx fifo overflow");
+		return;
+	}
+
+	if (status & HS_TX_TIMEOUT) {
+		DRM_DEV_ERROR_RATELIMITED(dsi->dev, "HS tx timeout");
+		return;
+	}
+
 	if (xfer->direction == DSI_PACKET_SEND && status & TX_PKT_DONE) {
 		xfer->status = xfer->tx_len;
 		end_packet = true;
@@ -758,7 +771,6 @@ static void nwl_dsi_begin_transmission(struct nwl_mipi_dsi *dsi)
 	u32 val;
 
 	/* Send the payload, if any */
-	/* TODO: Need to check the TX FIFO overflow */
 	length = pkt->payload_length;
 	payload = pkt->payload;
 
