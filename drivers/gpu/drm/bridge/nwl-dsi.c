@@ -782,7 +782,7 @@ static void nwl_dsi_begin_transmission(struct nwl_mipi_dsi *dsi)
 		nwl_dsi_write(dsi, TX_PAYLOAD, val);
 		break;
 	}
-	xfer->tx_len = length;
+	xfer->tx_len = pkt->payload_length;
 
 	/*
 	 * Now, send the header
