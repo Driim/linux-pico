@@ -311,8 +311,21 @@ unsigned long nwl_dsi_get_bit_clock(struct drm_bridge *bridge,
 }
 EXPORT_SYMBOL_GPL(nwl_dsi_get_bit_clock);
 
+
+/* Convert nano seconds to current bit clock cycles */
+static unsigned long ns2bc (struct nwl_mipi_dsi *dsi, unsigned long ns)
+{
+	int bpp;
+
+	bpp = mipi_dsi_pixel_format_to_bpp(dsi->format);
+	return DIV_ROUND_UP(ns * dsi->vm.pixelclock * bpp, dsi->lanes * 1000000000);
+}
+
+
 static void nwl_dsi_config_host(struct nwl_mipi_dsi *dsi)
 {
+	unsigned long cycles;
+
 	if (dsi->lanes < 1 || dsi->lanes > 4)
 		return;
 
@@ -326,13 +339,23 @@ static void nwl_dsi_config_host(struct nwl_mipi_dsi *dsi)
 		nwl_dsi_write(dsi, CFG_AUTOINSERT_EOTP, 0x00);
 	}
 
-	nwl_dsi_write(dsi, CFG_T_PRE, 0x01);
-	nwl_dsi_write(dsi, CFG_T_POST, 0x34);
-	nwl_dsi_write(dsi, CFG_TX_GAP, 0x0D);
-	nwl_dsi_write(dsi, CFG_EXTRA_CMDS_AFTER_EOTP, 0x00);
+	/* mdss-dsi-t-clk-pre in byte clock periods */
+	nwl_dsi_write(dsi, CFG_T_PRE, 0x2d);
+	/* mdss-dsi-t-clk-post in byte clock periods */
+	nwl_dsi_write(dsi, CFG_T_POST, 0x20);
+	/* 100 ns in byte clock periods */
+	cycles = DIV_ROUND_UP(ns2bc(dsi, 100), 8);
+	if (cycles < 0x0d) /* magic value found in the NXP sources */
+		cycles = 0x0d;
+	DRM_DEV_DEBUG_DRIVER(dsi->dev, "tx gap is %lu byte clock cycles", cycles);
+	nwl_dsi_write(dsi, CFG_TX_GAP, cycles);
+
+	/* mdss-dsi-tx-eot-append */
+	nwl_dsi_write(dsi, CFG_EXTRA_CMDS_AFTER_EOTP, 0x01);
 	nwl_dsi_write(dsi, CFG_HTX_TO_COUNT, 0x00);
 	nwl_dsi_write(dsi, CFG_LRX_H_TO_COUNT, 0x00);
 	nwl_dsi_write(dsi, CFG_BTA_H_TO_COUNT, 0x00);
+	/* in clk_esc cycles, min 1ms according to d-phy spec */
 	nwl_dsi_write(dsi, CFG_TWAKEUP, 0x3a98);
 }
 
