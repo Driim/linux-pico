@@ -361,12 +361,14 @@ static void __init imx8mq_opp_check_speed_grading(struct device *cpu_dev)
 			pr_warn("failed to disable 800MHz OPP!\n");
 		if (dev_pm_opp_disable(cpu_dev, 1300000000))
 			pr_warn("failed to disable 1.3GHz OPP!\n");
+		pr_warn("Configuring consumer grade\n");
 		break;
 	case OCOTP_CFG3_INDUSTRIAL:
 		if (dev_pm_opp_disable(cpu_dev, 1000000000))
 			pr_warn("failed to disable 1GHz OPP!\n");
 		if (dev_pm_opp_disable(cpu_dev, 1500000000))
 			pr_warn("failed to disable 1.5GHz OPP!\n");
+		pr_warn("Configuring industrial grade\n");
 		break;
 	default:
 		/* consumer part for default */
@@ -374,6 +376,7 @@ static void __init imx8mq_opp_check_speed_grading(struct device *cpu_dev)
 			pr_warn("failed to disable 800MHz OPP!\n");
 		if (dev_pm_opp_disable(cpu_dev, 1300000000))
 			pr_warn("failed to disable 1.3GHz OPP!\n");
+		pr_warn("Configuring consumer grade\n");
 		break;
 	}
 
