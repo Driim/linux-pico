@@ -811,7 +811,7 @@ static void nwl_dsi_begin_transmission(struct nwl_mipi_dsi *dsi)
 	 * header structure is:
 	 * header[0] = Virtual Channel + Data Type
 	 * header[1] = Word Count LSB (LP) or first param (SP)
-	 * header[2] = Word Count MSB (LP) or first param (SP)
+	 * header[2] = Word Count MSB (LP) or second param (SP)
 	 */
 	word_count = pkt->header[1] | (pkt->header[2] << 8);
 	hs_mode = (xfer->msg->flags & MIPI_DSI_MSG_USE_LPM)?0:1;
