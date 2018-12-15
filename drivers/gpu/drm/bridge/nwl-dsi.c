@@ -109,6 +109,13 @@
 #define RX_DT(x)	REG_GET((x), 21, 16)
 #define RX_VC(x)	REG_GET((x), 23, 22)
 
+/*
+ * DSI Video mode
+ */
+#define VIDEO_MODE_BURST_MODE_WITH_SYNC_PULSES      0
+#define VIDEO_MODE_NON_BURST_MODE_WITH_SYNC_EVENTS  BIT(0)
+#define VIDEO_MODE_BURST_MODE                       BIT(1)
+
 /* DSI IRQ handling */
 #define IRQ_STATUS			0x2a0
 #define SM_NOT_IDLE			BIT(0)
@@ -375,10 +382,13 @@ static void nwl_dsi_config_dpi(struct nwl_mipi_dsi *dsi)
 		!(dsi->dsi_mode_flags & MIPI_DSI_MODE_VIDEO_SYNC_PULSE);
 
 	if (burst_mode) {
-		nwl_dsi_write(dsi, VIDEO_MODE, 0x2);
+		nwl_dsi_write(dsi, VIDEO_MODE, VIDEO_MODE_BURST_MODE);
 		nwl_dsi_write(dsi, PIXEL_FIFO_SEND_LEVEL, 256);
 	} else {
-		nwl_dsi_write(dsi, VIDEO_MODE, 0x0);
+		nwl_dsi_write(dsi, VIDEO_MODE,
+			      ((dsi->dsi_mode_flags & MIPI_DSI_MODE_VIDEO_SYNC_PULSE) ?
+			       VIDEO_MODE_BURST_MODE_WITH_SYNC_PULSES :
+			       VIDEO_MODE_NON_BURST_MODE_WITH_SYNC_EVENTS));
 		nwl_dsi_write(dsi, PIXEL_FIFO_SEND_LEVEL, vm->hactive);
 	}
 
@@ -458,8 +468,11 @@ static void nwl_dsi_init_interrupts(struct nwl_mipi_dsi *dsi)
 	nwl_dsi_write(dsi, IRQ_MASK, 0xffffffff);
 	nwl_dsi_write(dsi, IRQ_MASK2, 0x7);
 
-	irq_enable = ~(u32)(TX_PKT_DONE_MASK |
-			RX_PKT_HDR_RCVD_MASK);
+	irq_enable = ~(u32)(TX_PKT_DONE_MASK
+			    | RX_PKT_HDR_RCVD_MASK
+			    | TX_FIFO_OVFLW_MASK
+			    | HS_TX_TIMEOUT_MASK
+		);
 
 	nwl_dsi_write(dsi, IRQ_MASK, irq_enable);
 }
@@ -735,6 +748,16 @@ static void nwl_dsi_finish_transmission(struct nwl_mipi_dsi *dsi, u32 status)
 	if (!xfer)
 		return;
 
+	if (status & TX_FIFO_OVFLW) {
+		DRM_DEV_ERROR_RATELIMITED(dsi->dev, "tx fifo overflow");
+		return;
+	}
+
+	if (status & HS_TX_TIMEOUT) {
+		DRM_DEV_ERROR_RATELIMITED(dsi->dev, "HS tx timeout");
+		return;
+	}
+
 	if (xfer->direction == DSI_PACKET_SEND && status & TX_PKT_DONE) {
 		xfer->status = xfer->tx_len;
 		end_packet = true;
@@ -758,7 +781,6 @@ static void nwl_dsi_begin_transmission(struct nwl_mipi_dsi *dsi)
 	u32 val;
 
 	/* Send the payload, if any */
-	/* TODO: Need to check the TX FIFO overflow */
 	length = pkt->payload_length;
 	payload = pkt->payload;
 
@@ -782,14 +804,14 @@ static void nwl_dsi_begin_transmission(struct nwl_mipi_dsi *dsi)
 		nwl_dsi_write(dsi, TX_PAYLOAD, val);
 		break;
 	}
-	xfer->tx_len = length;
+	xfer->tx_len = pkt->payload_length;
 
 	/*
 	 * Now, send the header
 	 * header structure is:
 	 * header[0] = Virtual Channel + Data Type
-	 * header[1] = Word Count LSB
-	 * header[2] = Word Count MSB
+	 * header[1] = Word Count LSB (LP) or first param (SP)
+	 * header[2] = Word Count MSB (LP) or first param (SP)
 	 */
 	word_count = pkt->header[1] | (pkt->header[2] << 8);
 	hs_mode = (xfer->msg->flags & MIPI_DSI_MSG_USE_LPM)?0:1;

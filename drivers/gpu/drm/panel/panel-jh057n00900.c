@@ -46,18 +46,17 @@ struct jh057n {
 
 static const struct drm_display_mode default_mode = {
 	.hdisplay    = 720,
-	.hsync_start = 720 + 40 /* front porch */,
-	.hsync_end   = 720 + 40 + 10 /* sync_len */,
-	.htotal      = 720 + 40 + 10 + 45 /* back porch */,
+	.hsync_start = 720 + 90 /* front porch */,
+	.hsync_end   = 720 + 90 + 20 /* sync_len */,
+	.htotal      = 720 + 90 + 20 + 20 /* back porch */,
 	.vdisplay    = 1440,
-	.vsync_start = 1440 + 10 /* front porch */,
-	.vsync_end   = 1440 + 10 + 4 /* sync_len */,
-	.vtotal      = 1440 + 10 + 4 + 11 /* back porch */,
+	.vsync_start = 1440 + 20 /* front porch */,
+	.vsync_end   = 1440 + 20 + 4 /* sync_len */,
+	.vtotal      = 1440 + 20 + 4 + 12 /* back porch */,
 	.vrefresh    = 60, /* confirmed from qualcom XML */
 	/* htotal * vtotal * vrefresh / 1000 */
-	/* actually 71638 but then we can't use best_match=false in mixel_phy_mipi_set_phy_speed
-	   so let's use this for now to be on the safe side */
-	.clock       = 72000, /* kHz */
+	/* actually 71638 but vendor suggets 75 Mhz */
+	.clock       = 75000, /* kHz */
 	.flags       = DRM_MODE_FLAG_NHSYNC | DRM_MODE_FLAG_NVSYNC,
 	.width_mm    = 65,
 	.height_mm   = 130,
@@ -151,8 +150,10 @@ static int jh057n_init_sequence(struct jh057n *ctx)
 		      0xCC, 0xCC, 0x77, 0x77);
 	/* setbgp is different from our first data set*/
 	dcs_write_seq(ctx, ST7703_CMD_SETBGP, 0x08, 0x08);
+
+	mdelay(100);
 	/* setvcom is different from our first data set*/
-	dcs_write_seq(ctx, ST7703_CMD_SETVCOM, 0x28, 0x28);
+	dcs_write_seq(ctx, ST7703_CMD_SETVCOM, 0x3F, 0x3F);
 	/* undocumented */
 	dcs_write_seq(ctx, 0xBF, 0x02, 0x11, 0x00);
 	dcs_write_seq(ctx, ST7703_CMD_SETGIP1, /* 63 */
@@ -359,11 +360,14 @@ static int jh057n_probe(struct mipi_dsi_device *dsi)
 	dsi->lanes = 4;
 	dsi->format = MIPI_DSI_FMT_RGB888;
 	dsi->mode_flags = MIPI_DSI_MODE_VIDEO         /* mdss-dsi-panel-type */
-	        | MIPI_DSI_MODE_VIDEO_BURST           /* mdss-dsi-traffic-mode */
+		/* Vendor says panel does not support burst mode,
+		   but mdss-dsi-traffic-mode says the opposite */
+		/* | MIPI_DSI_MODE_VIDEO_BURST */
+		| MIPI_DSI_MODE_VIDEO_SYNC_PULSE
 		/* the st7703 supports LPM and HSM */
 		| MIPI_DSI_MODE_LPM
-		/* transition into LP between transmissions */
-		| MIPI_DSI_CLOCK_NON_CONTINUOUS
+		/* allow to shut down serial clock */
+		/* | MIPI_DSI_CLOCK_NON_CONTINUOUS */
 		;
 
 	drm_panel_init(&ctx->panel);
