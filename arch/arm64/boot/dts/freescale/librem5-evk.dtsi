@@ -220,7 +220,7 @@
 		};
 	};
 
-        backlight_dsi {
+        backlight_dsi: backlight_dsi {
                 compatible = "pwm-backlight";
                 /* 200 Hz for the PAM2841 */
                 pwms = <&pwm1 0 5000000>;
