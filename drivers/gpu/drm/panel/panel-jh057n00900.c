@@ -53,10 +53,8 @@ static const struct drm_display_mode default_mode = {
 	.vsync_start = 1440 + 20 /* front porch */,
 	.vsync_end   = 1440 + 20 + 4 /* sync_len */,
 	.vtotal      = 1440 + 20 + 4 + 12 /* back porch */,
-	.vrefresh    = 60, /* confirmed from qualcom XML */
-	/* htotal * vtotal * vrefresh / 1000 */
-	/* actually 71638 but vendor suggets 75 Mhz */
-	.clock       = 75000, /* kHz */
+	.vrefresh    = 60,
+	.clock       = 75276, /* kHz */
 	.flags       = DRM_MODE_FLAG_NHSYNC | DRM_MODE_FLAG_NVSYNC,
 	.width_mm    = 65,
 	.height_mm   = 130,
