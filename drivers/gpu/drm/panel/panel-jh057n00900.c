@@ -87,8 +87,6 @@ static int jh057n_init_sequence(struct jh057n *ctx)
 	struct device *dev = ctx->dev;
 	int ret;
 
-	msleep(200);
-
 	/* Enable user command */
 	dcs_write_seq(ctx, ST7703_CMD_SETEXTC, /* 3 */
 		      0xF1, 0x12, 0x83);
