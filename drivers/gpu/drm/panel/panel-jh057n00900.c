@@ -324,9 +324,7 @@ static int jh057n_probe(struct mipi_dsi_device *dsi)
 	dsi->lanes = 4;
 	dsi->format = MIPI_DSI_FMT_RGB888;
 	dsi->mode_flags = MIPI_DSI_MODE_VIDEO         /* mdss-dsi-panel-type */
-		/* Vendor says panel does not support burst mode,
-		   but mdss-dsi-traffic-mode says the opposite */
-		/* | MIPI_DSI_MODE_VIDEO_BURST */
+		| MIPI_DSI_MODE_VIDEO_BURST
 		| MIPI_DSI_MODE_VIDEO_SYNC_PULSE
 		/* the st7703 supports LPM and HSM */
 		| MIPI_DSI_MODE_LPM
