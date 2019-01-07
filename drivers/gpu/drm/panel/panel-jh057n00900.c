@@ -83,34 +83,11 @@ static void jh057n_dcs_write_buf(struct jh057n *ctx, const void *data,
 	jh057n_dcs_write_buf(ctx, d, ARRAY_SIZE(d));	\
 })
 
-
-static int jh057n_dcs_read_one(struct jh057n *ctx, u8 cmd, u8 *data)
-{
-	struct mipi_dsi_device *dsi = to_mipi_dsi_device(ctx->dev);
-	u8 in[] = { cmd };
-	u8 out[1] = { 0 };
-	int ret;
-
-	ret = mipi_dsi_generic_read(dsi, in, ARRAY_SIZE(in), out, ARRAY_SIZE(out));
-	if (ret < 0) {
-		DRM_DEV_DEBUG_DRIVER(ctx->dev, "Couldn't read %d: %d", cmd, ret);
-		return ret;
-	}
-	if (ret == 0) {
-		DRM_DEV_DEBUG_DRIVER(ctx->dev, "Couldn't read %d, no data read", cmd);
-		return -EINVAL;
-	}
-	data[0] = out[0];
-	return ret;
-}
-
-
 static int jh057n_init_sequence(struct jh057n *ctx)
 {
 	struct mipi_dsi_device *dsi = to_mipi_dsi_device(ctx->dev);
 	struct device *dev = ctx->dev;
 	int ret;
-	u8 out[1] = { 0 };
 
 	msleep(200);
 
@@ -190,17 +167,6 @@ static int jh057n_init_sequence(struct jh057n *ctx)
 		return ret;
 	}
 	msleep(150); /* docs say 120ms */
-
-#if 0
-	/* This fails if we do more than the first "enter user mode" command and if fails
-	* always when we do *any* command and turn of the clock in nwl-dsi.c */
-	/* check panel */
-	if (jh057n_dcs_read_one(ctx, MIPI_DCS_GET_DIAGNOSTIC_RESULT, out) < 0)
-		return ret;
-	DRM_DEV_DEBUG_DRIVER(dev, "Panel function check: %s", !!(out[0] & BIT(6)) ? "ok" : "failed");
-	DRM_DEV_DEBUG_DRIVER(dev, "Panel internal setup: %s", !!(out[0] & BIT(7)) ? "ok" : "failed");
-	msleep(200); /* docs say 5ms */
-#endif
 
 	ret = mipi_dsi_dcs_set_display_on(dsi);
 	if (ret)
