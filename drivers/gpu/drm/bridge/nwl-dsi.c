@@ -336,6 +336,7 @@ static void nwl_dsi_config_host(struct nwl_mipi_dsi *dsi)
 	if (dsi->lanes < 1 || dsi->lanes > 4)
 		return;
 
+	DRM_DEV_DEBUG_DRIVER(dsi->dev, "DSI Lanes %d", dsi->lanes);
 	nwl_dsi_write(dsi, CFG_NUM_LANES, dsi->lanes - 1);
 
 	if (dsi->dsi_mode_flags & MIPI_DSI_CLOCK_NON_CONTINUOUS) {
@@ -371,6 +372,15 @@ static void nwl_dsi_config_dpi(struct nwl_mipi_dsi *dsi)
 	struct videomode *vm = &dsi->vm;
 	u32 color_format = nwl_dsi_get_dpi_pixel_format(dsi->format);
 	bool burst_mode;
+
+	DRM_DEV_DEBUG_DRIVER(dsi->dev, "hfront_porch = %d", vm->hfront_porch);
+	DRM_DEV_DEBUG_DRIVER(dsi->dev, "hback_porch = %d", vm->hback_porch);
+	DRM_DEV_DEBUG_DRIVER(dsi->dev, "hsync_len = %d", vm->hsync_len);
+	DRM_DEV_DEBUG_DRIVER(dsi->dev, "hactive = %d", vm->hactive);
+	DRM_DEV_DEBUG_DRIVER(dsi->dev, "vfront_porch = %d", vm->vfront_porch);
+	DRM_DEV_DEBUG_DRIVER(dsi->dev, "vback_porch = %d", vm->vback_porch);
+	DRM_DEV_DEBUG_DRIVER(dsi->dev, "vsync_len = %d", vm->vsync_len);
+	DRM_DEV_DEBUG_DRIVER(dsi->dev, "vactive = %d", vm->vactive);
 
 	nwl_dsi_write(dsi, INTERFACE_COLOR_CODING, DPI_24_BIT);
 	nwl_dsi_write(dsi, PIXEL_FORMAT, color_format);
@@ -811,7 +821,7 @@ static void nwl_dsi_begin_transmission(struct nwl_mipi_dsi *dsi)
 	 * header structure is:
 	 * header[0] = Virtual Channel + Data Type
 	 * header[1] = Word Count LSB (LP) or first param (SP)
-	 * header[2] = Word Count MSB (LP) or first param (SP)
+	 * header[2] = Word Count MSB (LP) or second param (SP)
 	 */
 	word_count = pkt->header[1] | (pkt->header[2] << 8);
 	hs_mode = (xfer->msg->flags & MIPI_DSI_MSG_USE_LPM)?0:1;
