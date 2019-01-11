@@ -17,7 +17,7 @@
 #include "librem5-evk.dtsi"
 
 &backlight_dsi {
-	default-brightness-level = <3>;
+	default-brightness-level = <40>;
 	status = "okay";
 };
 
