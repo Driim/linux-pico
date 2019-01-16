@@ -76,7 +76,6 @@
 			       <266000000>,
 			       <0>,
 			       <599999999>;
-	pwr-delay = <500>;
 	port@1 {
 		mipi_dsi_in: endpoint {
 			remote-endpoint = <&dcss_disp0_mipi_dsi>;
