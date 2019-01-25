@@ -92,7 +92,9 @@
 		reg = <0>;
 		pinctrl-names = "default";
 		pinctrl-0 = <&pinctrl_dsi>;
+		backlight = <&backlight_dsi>;
 		reset-gpios = <&gpio3 13 GPIO_ACTIVE_LOW>;
+
 		port {
 			panel1_in: endpoint {
 				remote-endpoint = <&mipi_dsi_bridge_out>;
