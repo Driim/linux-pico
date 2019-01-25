@@ -40,6 +40,7 @@ struct jh057n {
 	struct device *dev;
 	struct drm_panel panel;
 	struct gpio_desc *reset_gpio;
+	struct backlight_device *backlight;
 	bool prepared;
 	bool enabled;
 };
@@ -164,12 +165,6 @@ static int jh057n_init_sequence(struct jh057n *ctx)
 	}
 	msleep(150); /* docs say 120ms */
 
-	ret = mipi_dsi_dcs_set_display_on(dsi);
-	if (ret)
-		return ret;
-
-	msleep(120); /* docs say 5ms, vendor uses 120 ms */
-
 	DRM_DEV_DEBUG_DRIVER (dev, "Panel init sequence done");
 	return 0;
 }
@@ -181,17 +176,13 @@ static int jh057n_disable(struct drm_panel *panel)
 	int ret;
 
 	if (!ctx->enabled)
-		return 0; /* This is not an issue so we return 0 here */
+		return 0;
 
 	ret = mipi_dsi_dcs_set_display_off(dsi);
 	if (ret)
 		return ret;
 
-	ret = mipi_dsi_dcs_enter_sleep_mode(dsi);
-	if (ret)
-		return ret;
-
-	msleep(120);
+	msleep(20);
 
 	ctx->enabled = false;
 
@@ -254,7 +245,14 @@ static int jh057n_prepare(struct drm_panel *panel)
 static int jh057n_enable(struct drm_panel *panel)
 {
 	struct jh057n *ctx = panel_to_jh057n(panel);
+	struct mipi_dsi_device *dsi = to_mipi_dsi_device(ctx->dev);
+	int ret;
 
+	ret = mipi_dsi_dcs_set_display_on(dsi);
+	if (ret)
+		return ret;
+
+	msleep(20);
 	ctx->enabled = true;
 
 	return 0;
