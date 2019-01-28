@@ -40,6 +40,7 @@ struct jh057n {
 	struct device *dev;
 	struct drm_panel panel;
 	struct gpio_desc *reset_gpio;
+	struct backlight_device *backlight;
 	bool prepared;
 	bool enabled;
 };
@@ -164,12 +165,6 @@ static int jh057n_init_sequence(struct jh057n *ctx)
 	}
 	msleep(150); /* docs say 120ms */
 
-	ret = mipi_dsi_dcs_set_display_on(dsi);
-	if (ret)
-		return ret;
-
-	msleep(120); /* docs say 5ms, vendor uses 120 ms */
-
 	DRM_DEV_DEBUG_DRIVER (dev, "Panel init sequence done");
 	return 0;
 }
@@ -181,17 +176,19 @@ static int jh057n_disable(struct drm_panel *panel)
 	int ret;
 
 	if (!ctx->enabled)
-		return 0; /* This is not an issue so we return 0 here */
+		return 0;
 
 	ret = mipi_dsi_dcs_set_display_off(dsi);
 	if (ret)
 		return ret;
 
-	ret = mipi_dsi_dcs_enter_sleep_mode(dsi);
-	if (ret)
-		return ret;
+	if (ctx->backlight) {
+		ctx->backlight->props.power = FB_BLANK_POWERDOWN;
+		ctx->backlight->props.state |= BL_CORE_FBBLANK;
+		backlight_update_status(ctx->backlight);
+	}
 
-	msleep(120);
+	msleep(20);
 
 	ctx->enabled = false;
 
@@ -254,7 +251,20 @@ static int jh057n_prepare(struct drm_panel *panel)
 static int jh057n_enable(struct drm_panel *panel)
 {
 	struct jh057n *ctx = panel_to_jh057n(panel);
+	struct mipi_dsi_device *dsi = to_mipi_dsi_device(ctx->dev);
+	int ret;
 
+	ret = mipi_dsi_dcs_set_display_on(dsi);
+	if (ret)
+		return ret;
+
+	if (ctx->backlight) {
+		ctx->backlight->props.state &= ~BL_CORE_FBBLANK;
+		ctx->backlight->props.power = FB_BLANK_UNBLANK;
+		backlight_update_status(ctx->backlight);
+	}
+
+	msleep(20);
 	ctx->enabled = true;
 
 	return 0;
@@ -303,6 +313,7 @@ static int jh057n_probe(struct mipi_dsi_device *dsi)
 {
 	struct device *dev = &dsi->dev;
 	struct jh057n *ctx;
+	struct device_node *np;
 	int ret;
 
 	ctx = devm_kzalloc(dev, sizeof(*ctx), GFP_KERNEL);
@@ -329,6 +340,15 @@ static int jh057n_probe(struct mipi_dsi_device *dsi)
 		/* allow to shut down serial clock */
 		/* | MIPI_DSI_CLOCK_NON_CONTINUOUS */
 		;
+
+	np = of_parse_phandle(ctx->dev->of_node, "backlight", 0);
+	if (np) {
+		ctx->backlight = of_find_backlight_by_node(np);
+		of_node_put(np);
+
+		if (!ctx->backlight)
+			return -EPROBE_DEFER;
+	}
 
 	drm_panel_init(&ctx->panel);
 	ctx->panel.dev = dev;
@@ -357,6 +377,9 @@ static int jh057n_remove(struct mipi_dsi_device *dsi)
 
 	mipi_dsi_detach(dsi);
 	drm_panel_remove(&ctx->panel);
+
+	if (ctx->backlight)
+		put_device(&ctx->backlight->dev);
 
 	return 0;
 }
