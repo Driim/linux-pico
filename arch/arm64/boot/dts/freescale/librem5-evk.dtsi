@@ -955,14 +955,16 @@
 	};
 
         goodix_ts@5d {
-                compatible = "goodix,gt5688", "goodix,gt1x";
+                compatible = "goodix,gt5688";
                 pinctrl-names = "default";
                 pinctrl-0 = <&pinctrl_goodix_ts>;
                 reg = <0x5d>;
                 interrupt-parent = <&gpio3>;
-                interrupts = <0  IRQ_TYPE_LEVEL_LOW>;
-                goodix,rst-gpio = <&gpio1 5 GPIO_ACTIVE_LOW>;
-                goodix,irq-gpio = <&gpio3 0 GPIO_ACTIVE_LOW>;
+		interrupts = <0 IRQ_TYPE_LEVEL_LOW>;
+		reset-gpios = <&gpio1 5 GPIO_ACTIVE_HIGH>;
+		irq-gpios = <&gpio3 0 GPIO_ACTIVE_HIGH>;
+		touchscreen-size-x = <720>;
+		touchscreen-size-y = <1440>;
         };
 
 	sgtl5000: sgtl5000@a {
