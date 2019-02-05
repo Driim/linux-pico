@@ -671,6 +671,26 @@
 		};
 	};
 
+	snvs: snvs@30370000 {
+		compatible = "fsl,sec-v4.0-mon","syscon", "simple-mfd";
+		reg = <0x0 0x30370000 0x0 0x10000>;
+
+		snvs_rtc: snvs-rtc-lp{
+			compatible = "fsl,sec-v4.0-mon-rtc-lp";
+			regmap =<&snvs>;
+			offset = <0x34>;
+			interrupts = <GIC_SPI 19 IRQ_TYPE_LEVEL_HIGH>,
+				<GIC_SPI 20 IRQ_TYPE_LEVEL_HIGH>;
+		};
+
+		snvs_pwrkey: snvs-powerkey {
+			compatible = "fsl,sec-v4.0-pwrkey";
+			regmap = <&snvs>;
+			interrupts = <GIC_SPI 4 IRQ_TYPE_LEVEL_HIGH>;
+			wakeup-source;
+		};
+	};
+
 	src: src@30390000 {
 		compatible = "fsl,imx8mq-src", "fsl,imx51-src", "syscon";
 		reg = <0x0 0x30390000 0x0 0x10000>;
@@ -1089,9 +1109,11 @@
 				reg = <0x30b40000 0x10000>;
 				interrupts = <GIC_SPI 22 IRQ_TYPE_LEVEL_HIGH>;
 				clocks = <&clk IMX8MQ_CLK_DUMMY>,
-				         <&clk IMX8MQ_CLK_NAND_USDHC_BUS_DIV>,
-				         <&clk IMX8MQ_CLK_USDHC1_ROOT>;
+						 <&clk IMX8MQ_CLK_NAND_USDHC_BUS_DIV>,
+						 <&clk IMX8MQ_CLK_USDHC1_ROOT>;
 				clock-names = "ipg", "ahb", "per";
+				assigned-clocks = <&clk IMX8MQ_CLK_USDHC1_DIV>;
+				assigned-clock-rates = <400000000>;
 				fsl,tuning-start-tap = <20>;
 				fsl,tuning-step = <2>;
 				fsl,strobe-dll-delay-target = <5>;
@@ -1105,8 +1127,8 @@
 				reg = <0x30b50000 0x10000>;
 				interrupts = <GIC_SPI 23 IRQ_TYPE_LEVEL_HIGH>;
 				clocks = <&clk IMX8MQ_CLK_DUMMY>,
-				         <&clk IMX8MQ_CLK_NAND_USDHC_BUS_DIV>,
-				         <&clk IMX8MQ_CLK_USDHC2_ROOT>;
+						 <&clk IMX8MQ_CLK_NAND_USDHC_BUS_DIV>,
+						 <&clk IMX8MQ_CLK_USDHC2_ROOT>;
 				clock-names = "ipg", "ahb", "per";
 				fsl,tuning-start-tap = <20>;
 				fsl,tuning-step = <2>;
