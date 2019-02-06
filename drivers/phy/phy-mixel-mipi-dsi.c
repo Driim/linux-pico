@@ -253,6 +253,9 @@ int mixel_phy_mipi_set_phy_speed(struct phy *phy,
 		return -EINVAL;
 	}
 
+	if (best_match)
+		numerator = DIV_ROUND_UP(numerator, denominator) * denominator;
+
 	i = __ffs(denominator);
 	if (i > 3)
 		i = 3;
